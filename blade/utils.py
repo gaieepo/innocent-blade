@@ -1,13 +1,45 @@
-HEIGHT = 400
-WIDTH = 640
-FPS = 60
+HEIGHT = 720
+WIDTH = 960
+FPS = 10
 
-GOLD_SPEED = 2.0
+GOLD_SPEED = 1.0
 LANE_LENGTH = 100.0
-INITIAL_GOLD = 100.0
+INITIAL_GOLD = 90.0
 MOVEMENT_SPEED = 1.0
 POPULATION_LIMIT = 7
 REPAIR_COST = 0.5
+
+ACTIONS = ['null', 'barrack', 'blacksmith', 'windmill', 'footman', 'rifleman']
+
+SIMPLE_TECHS = {
+    'barrack': {
+        'name': 'Barrack',
+        'require': [],
+        'time_cost': 40,
+        'count_down': 40,
+        'gold_cost': 120,
+        'built': False,
+        'building': False,
+    },
+    'blacksmith': {
+        'name': 'Blacksmith',
+        'require': [],
+        'time_cost': 50,
+        'count_down': 50,
+        'gold_cost': 220,
+        'built': False,
+        'building': False,
+    },
+    'windmill': {
+        'name': 'Windmill',
+        'require': [],
+        'time_cost': 30,
+        'count_down': 30,
+        'gold_cost': 100,
+        'built': False,
+        'building': False,
+    },
+}
 
 TECHS = {
     'barrack': {
@@ -156,17 +188,33 @@ TECHS = {
     },
 }
 
-UNITS = ['swordman', 'gunman']
-
 
 class Unit:
     def __init__(self):
-        self.cost = None
-        self.can_create = False
+        self.name = None
 
-        self.tier = 1
-        self.structure_required = None
-        self.tier_required = None
+        self.gold_cost = None
+        self.time_cost = None
 
-        self.health = 100.0
-        self.attack = 5.0
+        self.require = []
+
+        self.health = None
+        self.attack = None
+
+
+SIMPLE_UNITS = {
+    'footman': {
+        'name': 'Footman',
+        'require': ['barrack'],
+        'time_cost': 15,
+        'gold_cost': 70,
+        'building': False,
+    },
+    'rifleman': {
+        'name': 'Rifleman',
+        'require': ['barrack', 'blacksmith'],
+        'time_cost': 15,
+        'gold_cost': 90,
+        'building': False,
+    },
+}

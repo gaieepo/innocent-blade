@@ -3,34 +3,77 @@ import sys
 
 import pygame
 
-from utils import FPS, GOLD_SPEED, INITIAL_GOLD, REPAIR_COST, TECHS
+from utils import (ACTIONS, FPS, GOLD_SPEED, HEIGHT, INITIAL_GOLD, REPAIR_COST,
+                   SIMPLE_TECHS, SIMPLE_UNITS, TECHS, WIDTH)
 
 
 class Faction:
-    def __init__(self):
-        self.tech = copy.deepcopy(TECHS)
+    def __init__(self, side='white'):
+        self.side = side
+        self.techs = copy.deepcopy(SIMPLE_TECHS)
+        self.units = copy.deepcopy(SIMPLE_UNITS)
         self.gold = INITIAL_GOLD
         self.gold_speed = GOLD_SPEED
-        self.units = []
+        self.army = []
         self.repairing = False
         self.state = {}
 
     def reset(self):
-        self.tech = copy.deepcopy(TECHS)
+        self.techs = copy.deepcopy(SIMPLE_TECHS)
         self.gold = INITIAL_GOLD
-        self.units = []
-        # TODO process other state
+        self.army = []
+        # TODO process proper state
 
         return self.state
 
     def step(self, action):
         # process action
-        # state update
-        # - passive update
-        self.gold += self.gold_speed - self.repairing * REPAIR_COST
-        # - active update
+        # print(f'{self.side} receives action {action}')
 
-        self.state['gold'] = self.gold
+        # state update
+        # - active update
+        # TODO handle tech / unit / idle ... separately
+
+        if action in self.techs.keys():
+            if (
+                self.techs[action]['building']
+                or self.techs[action]['built']
+                or self.techs[action]['gold_cost'] > self.gold
+            ):
+                print(f'illegal action {action}')
+            else:
+                self.techs[action]['building'] = True
+                self.gold -= self.techs[action]['gold_cost']
+        elif action in self.units.keys():
+            print(self.side, 'receives', action)
+            # TODO action on unit logic
+
+        # - passive update
+        # 1. gold
+        # 2. count down for techs
+        # 3. count down for units
+        # 4. units movement
+        # 5. units health
+        self.gold += self.gold_speed - self.repairing * REPAIR_COST
+
+        for k, v in self.techs.items():
+            if v['count_down'] and v['building']:
+                v['count_down'] -= 1
+
+                if v['count_down'] == 0:
+                    v['built'] = True
+                    v['building'] = False
+
+        # prepare state
+
+        for k, v in self.techs.items():
+            self.state[k] = (
+                not v['built']
+                and not v['building']
+                and v['gold_cost'] <= self.gold
+            )
+
+        self.state['gold'] = f'{self.gold:.0f}'
 
         return self.state
 
@@ -40,21 +83,19 @@ class Game:
         pygame.init()
         pygame.display.set_caption('The Blade of Innocence')
         self.clock = pygame.time.Clock()
-        self.screen = pygame.display.set_mode((640, 480))
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         self.surface = pygame.Surface(self.screen.get_size())
         self.surface.fill((255, 255, 255))
 
-        self.white = Faction()
-        self.black = Faction()
+        self.white = Faction('white')
+        self.black = Faction('black')
 
-        self.state = None
+        self.state = {}
 
     def reset(self):
-        white_state = self.white.reset()
-        black_state = self.black.reset()
+        self.state['white'] = self.white.reset()
+        self.state['black'] = self.black.reset()
         # TODO process aggregated state
-
-        self.state = [white_state, black_state]
 
         return self.state
 
@@ -62,13 +103,13 @@ class Game:
         self.surface.fill((255, 255, 255))
 
         font = pygame.font.Font(None, 36)
-        text = font.render(str(self.state), 1, (10, 10, 10))
-        fps_text = font.render(str(self.clock.get_fps()), 1, (10, 10, 10))
-        fps_textpos = fps_text.get_rect()
-        fps_textpos.centery += 32
+        text = font.render(str(self.state['white']), 1, (10, 10, 10))
+        # fps_text = font.render(str(self.clock.get_fps()), 1, (10, 10, 10))
+        # fps_textpos = fps_text.get_rect()
+        # fps_textpos.centery += 32
 
         self.surface.blit(text, text.get_rect())
-        self.surface.blit(fps_text, fps_textpos)
+        # self.surface.blit(fps_text, fps_textpos)
         self.screen.blit(self.surface, (0, 0))
 
         if mode == 'human':
@@ -77,9 +118,15 @@ class Game:
         self.clock.tick(FPS)
 
     def step(self, action):
-        # conditional action on each side
-        self.white.step(action)
-        self.black.step(action)
+        if action in ACTIONS:
+            # TODO conditional action on each side
+            self.state['white'] = self.white.step(action)
+            self.state['black'] = self.black.step(action)
+        else:
+            print(f'invalid action {action}')
+
+        # global movement
+        # global health
 
         reward = 0
         done = False
@@ -100,7 +147,18 @@ if __name__ == "__main__":
                 if event.key == pygame.K_q:
                     pygame.quit()
                     sys.exit()
-        state, reward, done, info = game.step(None)
+                elif event.key == pygame.K_1:
+                    game.step('barrack')
+                elif event.key == pygame.K_2:
+                    game.step('blacksmith')
+                elif event.key == pygame.K_3:
+                    game.step('windmill')
+                elif event.key == pygame.K_4:
+                    game.step('footman')
+                elif event.key == pygame.K_5:
+                    game.step('rifleman')
+        else:
+            game.step('null')
         game.render()
 
     game.close()
