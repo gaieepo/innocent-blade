@@ -1,6 +1,9 @@
 import copy
+import sys
 
-from utils import GOLD_SPEED, INITIAL_GOLD, REPAIR_COST, TECHS
+import pygame
+
+from utils import FPS, GOLD_SPEED, INITIAL_GOLD, REPAIR_COST, TECHS
 
 
 class Faction:
@@ -34,6 +37,13 @@ class Faction:
 
 class Game:
     def __init__(self):
+        pygame.init()
+        pygame.display.set_caption('The Blade of Innocence')
+        self.clock = pygame.time.Clock()
+        self.screen = pygame.display.set_mode((640, 480))
+        self.surface = pygame.Surface(self.screen.get_size())
+        self.surface.fill((255, 255, 255))
+
         self.white = Faction()
         self.black = Faction()
 
@@ -49,7 +59,22 @@ class Game:
         return self.state
 
     def render(self, mode='human', close=False):
-        return
+        self.surface.fill((255, 255, 255))
+
+        font = pygame.font.Font(None, 36)
+        text = font.render(str(self.state), 1, (10, 10, 10))
+        fps_text = font.render(str(self.clock.get_fps()), 1, (10, 10, 10))
+        fps_textpos = fps_text.get_rect()
+        fps_textpos.centery += 32
+
+        self.surface.blit(text, text.get_rect())
+        self.surface.blit(fps_text, fps_textpos)
+        self.screen.blit(self.surface, (0, 0))
+
+        if mode == 'human':
+            pygame.display.flip()
+
+        self.clock.tick(FPS)
 
     def step(self, action):
         # conditional action on each side
@@ -70,7 +95,12 @@ if __name__ == "__main__":
     state = game.reset()
 
     while True:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_q:
+                    pygame.quit()
+                    sys.exit()
         state, reward, done, info = game.step(None)
-        print(state)
+        game.render()
 
     game.close()
