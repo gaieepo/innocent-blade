@@ -4,7 +4,8 @@ import sys
 import pygame
 
 from utils import (ACTIONS, FPS, GOLD_SPEED, HEIGHT, INITIAL_GOLD, REPAIR_COST,
-                   SIMPLE_TECHS, SIMPLE_UNITS, TECHS, WIDTH, Unit)
+                   SIMPLE_TECHS, SIMPLE_UNITS, TECHS, WIDTH,
+                   WINDMILL_GOLD_SPEED, Unit)
 
 
 class Faction:
@@ -73,6 +74,10 @@ class Faction:
 
         # - passive update
         # 1. gold
+
+        if self.techs['windmill']:
+            self.gold_speed = WINDMILL_GOLD_SPEED
+
         self.gold += self.gold_speed - self.repairing * REPAIR_COST
 
         # 2. count down for techs
@@ -84,6 +89,7 @@ class Faction:
                 if v['count_down'] == 0:
                     v['built'] = True
                     v['building'] = False
+
         # 3. count down for units
 
         for k, v in self.units.items():
@@ -93,20 +99,46 @@ class Faction:
                 if v['count_down'] == 0:
                     v['building'] = False
                     v['count_down'] = v['time_cost']
+                    self.army.append(UNIT_TEMPLATE[k](v))
 
-        # 4. units movement
-        # 5. units health
+        # # 4. units movement
+        # delegate by game step
+
+        # # 5. units health
 
         # prepare state
 
         for k, v in self.techs.items():
-            self.state[k] = (
-                not v['built']
-                and not v['building']
-                and v['gold_cost'] <= self.gold
-            )
+            status = 'not'
 
-        self.state['gold'] = f'{self.gold:.0f}'
+            if v['gold_cost'] <= self.gold and self._all_require_satisfied(
+                v['require']
+            ):
+                status = 'can'
+
+            if v['building']:
+                status = 'building'
+
+            if v['built']:
+                status = 'built'
+
+            self.state[k] = status
+
+        for k, v in self.units.items():
+            status = 'not'
+
+            if v['gold_cost'] <= self.gold and self._all_require_satisfied(
+                v['require']
+            ):
+                status = 'can'
+
+            if v['building']:
+                status = 'building'
+
+            self.state[k] = status
+
+        self.state['gold'] = self.gold
+        self.state['army'] = self.army
 
         return self.state
 
@@ -137,14 +169,37 @@ class Game:
 
         font = pygame.font.Font(None, 36)
         white_text = font.render('White', 1, (10, 10, 10))
+        self.surface.blit(white_text, white_text.get_rect())
+
+        black_text = font.render('Black', 1, (10, 10, 10))
+        black_textpos = black_text.get_rect()
+        black_textpos.right = WIDTH
+        self.surface.blit(black_text, black_textpos)
 
         fps_text = font.render(str(self.clock.get_fps()), 1, (10, 10, 10))
         fps_textpos = fps_text.get_rect()
         fps_textpos.midtop = (WIDTH / 2, 0)
-
-        # blit
-        self.surface.blit(white_text, white_text.get_rect())
         self.surface.blit(fps_text, fps_textpos)
+
+        white_offset = 50
+
+        for k, v in self.state['white'].items():
+            k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
+            k_textpos = k_text.get_rect()
+            k_textpos.top = white_offset
+            self.surface.blit(k_text, k_textpos)
+            white_offset += 30
+
+        black_offset = 50
+
+        for k, v in self.state['black'].items():
+            k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
+            k_textpos = k_text.get_rect()
+            k_textpos.right = WIDTH
+            k_textpos.top = black_offset
+            self.surface.blit(k_text, k_textpos)
+            black_offset += 30
+
         self.screen.blit(self.surface, (0, 0))
 
         if mode == 'human':
@@ -153,15 +208,66 @@ class Game:
         self.clock.tick(FPS)
 
     def step(self, action):
-        if action in ACTIONS:
+        if action in ['forward', 'backward']:
+            for unit in self.white.army:
+                if action == 'forward':
+                    if True:  # TODO frontier
+                        unit.movement = 1
+                elif action == 'backward':
+                    if unit.distance - unit.speed >= 0:
+                        unit.movement = -1
+
+            for unit in self.black.army:
+                if action == 'forward':
+                    if True:  # TODO frontier
+                        unit.movement = 1
+                elif action == 'backward':
+                    if unit.distance - unit.speed >= 0:
+                        unit.movement = -1
+        elif action in ACTIONS:
             # TODO conditional action on each side
             self.state['white'] = self.white.step(action)
-            self.state['black'] = self.black.step(action)
+            self.state['black'] = self.black.step('null')
         else:
             print(f'invalid action {action}: unknown action')
 
-        # global movement
         # global health
+
+        for unit in self.white.army:
+            for target in self.black.army:
+                target_distance = LANE_LENGTH - target.distance - unit.distance
+                if target_distance < unit.attack_range:
+                    target.health -= unit.attack()
+                    if target.health <= 0:
+                        self.black.army.remove(target)
+                    break
+
+
+        # global movement
+
+        for unit in self.white.army:
+            if unit.movement == 1 and True:  # TODO frontier
+                unit.distance += unit.speed
+
+                if True:  # TODO process confront frontier
+                    pass
+            elif unit.movement == -1 and unit.distance - unit.speed >= 0:
+                unit.distance -= unit.speed
+
+                if unit.distance - unit.speed < 0:
+                    unit.movement = 0
+
+        for unit in self.black.army:
+            if unit.movement == 1 and True:  # TODO frontier
+                unit.distance += unit.speed
+
+                if True:  # TODO process confront frontier
+                    pass
+            elif unit.movement == -1 and unit.distance - unit.speed >= 0:
+                unit.distance -= unit.speed
+
+                if unit.distance - unit.speed < 0:
+                    unit.movement = 0
 
         reward = 0
         done = False
@@ -169,7 +275,8 @@ class Game:
         return self.state, reward, done, {}
 
     def close(self):
-        return
+        pygame.quit()
+        sys.exit()
 
 
 if __name__ == "__main__":
@@ -180,8 +287,7 @@ if __name__ == "__main__":
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q:
-                    pygame.quit()
-                    sys.exit()
+                    game.close()
                 elif event.key == pygame.K_1:
                     game.step('barrack')
                 elif event.key == pygame.K_2:
@@ -192,6 +298,10 @@ if __name__ == "__main__":
                     game.step('footman')
                 elif event.key == pygame.K_5:
                     game.step('rifleman')
+                elif event.key == pygame.K_SPACE:
+                    game.step('forward')
+                elif event.key == pygame.K_BACKSPACE:
+                    game.step('backward')
         else:
             game.step('null')
         game.render()

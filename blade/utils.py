@@ -1,15 +1,28 @@
+import random
+
 HEIGHT = 720
 WIDTH = 960
-FPS = 10
+FPS = 15
 
 GOLD_SPEED = 1.0
+WINDMILL_GOLD_SPEED = 2.0
+
 LANE_LENGTH = 100.0
 INITIAL_GOLD = 90.0
 MOVEMENT_SPEED = 1.0
 POPULATION_LIMIT = 7
 REPAIR_COST = 0.5
 
-ACTIONS = ['null', 'barrack', 'blacksmith', 'windmill', 'footman', 'rifleman']
+ACTIONS = [
+    'null',
+    'barrack',
+    'blacksmith',
+    'windmill',
+    'footman',
+    'rifleman',
+    'forward',
+    'backward',
+]
 
 SIMPLE_TECHS = {
     'barrack': {
@@ -188,20 +201,6 @@ TECHS = {
     },
 }
 
-
-class Unit:
-    def __init__(self):
-        self.name = None
-
-        self.gold_cost = None
-        self.time_cost = None
-
-        self.require = []
-
-        self.health = None
-        self.attack = None
-
-
 SIMPLE_UNITS = {
     'footman': {
         'name': 'Footman',
@@ -223,5 +222,61 @@ SIMPLE_UNITS = {
 
 
 class Unit:
-    def __init__(self):
-        pass
+    def __init__(self, *args, **kwargs):
+        for d in args:
+            for k in d:
+                setattr(self, k, d[k])
+
+        for k in kwargs:
+            setattr(self, k, kwargs[k])
+
+        self.distance = 0.0
+        self.speed = 0.1
+
+        self.movement = 0  # -1, 0, 1
+
+    @property
+    def fmt_movement(self):
+        l = ['<-', 'O', '->']
+
+        return l[self.movement + 1]
+
+    def __repr__(self):
+        return f'< {self.name[0]} {self.fmt_movement} {self.distance:.1f}>'
+
+
+class Footman(Unit):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.health = 300.0
+
+        self.attack_range = 2.0
+        self.damage = (5, 10)
+        # self.attack_animation = 2
+        # self.attack_backswing = 2
+        self.interval = 5
+        self.count_down = self.interval
+
+    def attack(self):
+        return random.uniform(*self.damage)
+
+
+class Rifleman(Unit):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.health = 200.0
+
+        self.attack_range = 2.0
+        self.damage = (10, 15)
+        # self.attack_animation = 2
+        # self.attack_backswing = 2
+        self.interval = 5
+        self.count_down = self.interval
+
+    def attack(self):
+        return random.uniform(*self.damage)
+
+
+UNIT_TEMPLATE = {'footman': Footman, 'rifleman': Rifleman}
