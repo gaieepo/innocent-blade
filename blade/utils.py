@@ -206,15 +206,22 @@ SIMPLE_UNITS = {
     'footman': {
         'name': 'Footman',
         'require': ['barrack'],
-        'time_cost': 15,
         'gold_cost': 70,
+        'time_cost': 15,
+        'count_down': 15,
         'building': False,
     },
     'rifleman': {
         'name': 'Rifleman',
         'require': ['barrack', 'blacksmith'],
-        'time_cost': 15,
         'gold_cost': 90,
+        'time_cost': 15,
+        'count_down': 15,
         'building': False,
     },
 }
+
+
+class Unit:
+    def __init__(self):
+        pass

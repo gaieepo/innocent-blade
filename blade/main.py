@@ -4,7 +4,7 @@ import sys
 import pygame
 
 from utils import (ACTIONS, FPS, GOLD_SPEED, HEIGHT, INITIAL_GOLD, REPAIR_COST,
-                   SIMPLE_TECHS, SIMPLE_UNITS, TECHS, WIDTH)
+                   SIMPLE_TECHS, SIMPLE_UNITS, TECHS, WIDTH, Unit)
 
 
 class Faction:
@@ -26,6 +26,15 @@ class Faction:
 
         return self.state
 
+    def _all_require_satisfied(self, reqs):
+        rv = True
+
+        for req in reqs:
+            if not self.techs[req]['built']:
+                rv = False
+
+        return rv
+
     def step(self, action):
         # process action
         # print(f'{self.side} receives action {action}')
@@ -39,22 +48,34 @@ class Faction:
                 self.techs[action]['building']
                 or self.techs[action]['built']
                 or self.techs[action]['gold_cost'] > self.gold
+                or not self._all_require_satisfied(
+                    self.techs[action]['require']
+                )
             ):
-                print(f'illegal action {action}')
+                print(f'illegal action {action}: tech cannot been built')
             else:
                 self.techs[action]['building'] = True
                 self.gold -= self.techs[action]['gold_cost']
         elif action in self.units.keys():
             print(self.side, 'receives', action)
-            # TODO action on unit logic
+
+            if (
+                self.units[action]['building']
+                or self.units[action]['gold_cost'] > self.gold
+                or not self._all_require_satisfied(
+                    self.units[action]['require']
+                )
+            ):
+                print(f'illegal action {action}: unit cannot been built')
+            else:
+                self.units[action]['building'] = True
+                self.gold -= self.units[action]['gold_cost']
 
         # - passive update
         # 1. gold
-        # 2. count down for techs
-        # 3. count down for units
-        # 4. units movement
-        # 5. units health
         self.gold += self.gold_speed - self.repairing * REPAIR_COST
+
+        # 2. count down for techs
 
         for k, v in self.techs.items():
             if v['count_down'] and v['building']:
@@ -63,6 +84,18 @@ class Faction:
                 if v['count_down'] == 0:
                     v['built'] = True
                     v['building'] = False
+        # 3. count down for units
+
+        for k, v in self.units.items():
+            if v['count_down'] and v['building']:
+                v['count_down'] -= 1
+
+                if v['count_down'] == 0:
+                    v['building'] = False
+                    v['count_down'] = v['time_cost']
+
+        # 4. units movement
+        # 5. units health
 
         # prepare state
 
@@ -103,13 +136,15 @@ class Game:
         self.surface.fill((255, 255, 255))
 
         font = pygame.font.Font(None, 36)
-        text = font.render(str(self.state['white']), 1, (10, 10, 10))
-        # fps_text = font.render(str(self.clock.get_fps()), 1, (10, 10, 10))
-        # fps_textpos = fps_text.get_rect()
-        # fps_textpos.centery += 32
+        white_text = font.render('White', 1, (10, 10, 10))
 
-        self.surface.blit(text, text.get_rect())
-        # self.surface.blit(fps_text, fps_textpos)
+        fps_text = font.render(str(self.clock.get_fps()), 1, (10, 10, 10))
+        fps_textpos = fps_text.get_rect()
+        fps_textpos.midtop = (WIDTH / 2, 0)
+
+        # blit
+        self.surface.blit(white_text, white_text.get_rect())
+        self.surface.blit(fps_text, fps_textpos)
         self.screen.blit(self.surface, (0, 0))
 
         if mode == 'human':
@@ -123,7 +158,7 @@ class Game:
             self.state['white'] = self.white.step(action)
             self.state['black'] = self.black.step(action)
         else:
-            print(f'invalid action {action}')
+            print(f'invalid action {action}: unknown action')
 
         # global movement
         # global health
