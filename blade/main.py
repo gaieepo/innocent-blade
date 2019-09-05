@@ -3,8 +3,8 @@ import sys
 
 import pygame
 
-from utils import (ACTIONS, FPS, GOLD_SPEED, HEIGHT, INITIAL_GOLD, REPAIR_COST,
-                   SIMPLE_TECHS, SIMPLE_UNITS, TECHS, WIDTH,
+from utils import (ACTIONS, FPS, GOLD_SPEED, HEIGHT, INITIAL_GOLD, LANE_LENGTH,
+                   REPAIR_COST, SIMPLE_TECHS, SIMPLE_UNITS, TECHS, WIDTH,
                    WINDMILL_GOLD_SPEED, Unit)
 
 
@@ -35,6 +35,23 @@ class Faction:
                 rv = False
 
         return rv
+
+    def _frontier(self):
+        """
+        the frontier
+
+        return:
+            fr - longest distance
+            un - frontier unit
+        """
+        fr, un = 0.0, None
+
+        for unit in self.army:
+            if unit.distance > fr:
+                fr = unit.distance
+                un = unit
+
+        return fr, un
 
     def step(self, action):
         # process action
@@ -211,16 +228,14 @@ class Game:
         if action in ['forward', 'backward']:
             for unit in self.white.army:
                 if action == 'forward':
-                    if True:  # TODO frontier
-                        unit.movement = 1
+                    unit.movement = 1
                 elif action == 'backward':
                     if unit.distance - unit.speed >= 0:
                         unit.movement = -1
 
             for unit in self.black.army:
                 if action == 'forward':
-                    if True:  # TODO frontier
-                        unit.movement = 1
+                    unit.movement = 1
                 elif action == 'backward':
                     if unit.distance - unit.speed >= 0:
                         unit.movement = -1
@@ -234,23 +249,30 @@ class Game:
         # global health
 
         for unit in self.white.army:
-            for target in self.black.army:
-                target_distance = LANE_LENGTH - target.distance - unit.distance
-                if target_distance < unit.attack_range:
-                    target.health -= unit.attack()
-                    if target.health <= 0:
-                        self.black.army.remove(target)
-                    break
+            fr, un = self.black._frontier()
+            target_distance = LANE_LENGTH - fr - unit.distance
 
+            if (
+                target_distance < unit.attack_range
+                and unit.count_down == unit.interval
+            ):
+                un.health -= unit.attack()
+
+                if un.health <= 0:
+                    self.black.army.remove(un)
+
+                unit.count_down -= 1
+
+                if unit.count_down == 0:
+                    unit.count_down = unit.interval
 
         # global movement
 
         for unit in self.white.army:
-            if unit.movement == 1 and True:  # TODO frontier
+            if unit.movement == 1 and not unit._in_range(
+                self.black._frontier()
+            ):
                 unit.distance += unit.speed
-
-                if True:  # TODO process confront frontier
-                    pass
             elif unit.movement == -1 and unit.distance - unit.speed >= 0:
                 unit.distance -= unit.speed
 
@@ -258,17 +280,17 @@ class Game:
                     unit.movement = 0
 
         for unit in self.black.army:
-            if unit.movement == 1 and True:  # TODO frontier
+            if unit.movement == 1 and not unit._in_range(
+                self.white._frontier()
+            ):
                 unit.distance += unit.speed
-
-                if True:  # TODO process confront frontier
-                    pass
             elif unit.movement == -1 and unit.distance - unit.speed >= 0:
                 unit.distance -= unit.speed
 
                 if unit.distance - unit.speed < 0:
                     unit.movement = 0
 
+        # gym support
         reward = 0
         done = False
 

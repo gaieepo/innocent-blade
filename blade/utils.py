@@ -244,6 +244,9 @@ class Unit:
     def __repr__(self):
         return f'< {self.name[0]} {self.fmt_movement} {self.distance:.1f}>'
 
+    def _in_range(self, fr, *args):
+        return LANE_LENGTH - fr - self.distance <= self.attack_range
+
 
 class Footman(Unit):
     def __init__(self, *args, **kwargs):
