@@ -7,11 +7,11 @@ FPS = 15
 GOLD_SPEED = 1.0
 WINDMILL_GOLD_SPEED = 2.0
 
-LANE_LENGTH = 100.0
+LANE_LENGTH = 5.0
 INITIAL_GOLD = 90.0
 MOVEMENT_SPEED = 1.0
 POPULATION_LIMIT = 7
-REPAIR_COST = 0.5
+
 
 ACTIONS = [
     'null',
@@ -22,6 +22,8 @@ ACTIONS = [
     'rifleman',
     'forward',
     'backward',
+    'repair',
+    'stop_repair',
 ]
 
 SIMPLE_TECHS = {
@@ -221,6 +223,55 @@ SIMPLE_UNITS = {
 }
 
 
+class Base:
+    HEALTH = [1600.0, 2200.0, 2800.0]
+    REPAIR_COST = 1.0
+    REPAIR_SPEED = 2.0
+
+    def __init__(self, faction):
+        self.faction = faction
+        self.distance = 0.0
+
+        self.repairing = False
+        self.max_health = self.__class__.HEALTH[0]
+        self.health = self.max_health
+
+    @property
+    def fmt_repairing(self):
+        return '+' if self.repairing else '_'
+
+    def __repr__(self):
+        return (
+            f'<{self.faction.side} {self.fmt_direction} H:{self.health:.1f}>'
+        )
+
+    def set_repair(self, flag):
+        if flag:
+            if self.health < self.max_health:
+                self.repairing = True
+        else:
+            self.repairing = False
+
+    def update_max_health(self, faction):
+        # TODO update correct number
+        # if faction.techs['keep']
+        #     return self.__class__.HEALTH[1]
+        # if faction.techs['castle']:
+        #     return self.__class__.HEALTH[2]
+
+        return self.__class__.HEALTH[0]
+
+    def step_repair(self):
+        if self.faction.gold < self.__class__.REPAIR_COST:
+            self.repairing = False
+        elif self.repairing and self.health < self.max_health:
+            self.health += self.__class__.REPAIR_SPEED
+
+            if self.health >= self.max_health:
+                self.health = self.max_health
+                self.repairing = False
+
+
 class Unit:
     def __init__(self, *args, **kwargs):
         for d in args:
@@ -233,19 +284,27 @@ class Unit:
         self.distance = 0.0
         self.speed = 0.1
 
-        self.movement = 0  # -1, 0, 1
+        self.direction = 0  # -1, 0, 1
+        self.static = True
+
+        self.cool_down = 0
 
     @property
-    def fmt_movement(self):
+    def fmt_direction(self):
         l = ['<-', 'O', '->']
 
-        return l[self.movement + 1]
+        return l[self.direction + 1]
 
     def __repr__(self):
-        return f'< {self.name[0]} {self.fmt_movement} {self.distance:.1f}>'
+        return f'<{self.name[0]} {self.fmt_direction} H:{self.health:.1f} D:{self.distance:.1f}>'
 
-    def _in_range(self, fr, *args):
+    def _in_range(self, fr):
         return LANE_LENGTH - fr - self.distance <= self.attack_range
+
+    def ready(self, dist):
+        return (
+            self.static and dist <= self.attack_range and self.cool_down == 0
+        )
 
 
 class Footman(Unit):
@@ -259,7 +318,7 @@ class Footman(Unit):
         # self.attack_animation = 2
         # self.attack_backswing = 2
         self.interval = 5
-        self.count_down = self.interval
+        self.cool_down = 0
 
     def attack(self):
         return random.uniform(*self.damage)
@@ -272,11 +331,10 @@ class Rifleman(Unit):
         self.health = 200.0
 
         self.attack_range = 2.0
-        self.damage = (10, 15)
+        self.damage = (10, 20)
         # self.attack_animation = 2
         # self.attack_backswing = 2
-        self.interval = 5
-        self.count_down = self.interval
+        self.interval = 7
 
     def attack(self):
         return random.uniform(*self.damage)
