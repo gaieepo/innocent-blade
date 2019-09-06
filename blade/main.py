@@ -71,7 +71,6 @@ class Faction:
 
         # state update
         # - active update
-        # TODO handle tech / unit / idle ... separately
 
         if action in self.techs.keys():
             if (
@@ -316,7 +315,6 @@ class Game:
                         unit.direction = -1
 
         elif action in ACTIONS:
-            # TODO conditional action on each side
             self.state['white'] = self.white.step(action)
             self.state['black'] = self.black.step('null')
         else:
@@ -379,7 +377,6 @@ class Game:
                         done = True
 
                         break
-
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
             elif target_distance <= unit.attack_range and unit.cool_down > 0:
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
@@ -400,7 +397,6 @@ class Game:
                         done = True
 
                         break
-
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
             elif target_distance <= unit.attack_range and unit.cool_down > 0:
                 unit.cool_down = (unit.cool_down + 1) % unit.interval

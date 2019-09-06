@@ -7,7 +7,7 @@ FPS = 15
 GOLD_SPEED = 1.0
 WINDMILL_GOLD_SPEED = 2.0
 
-LANE_LENGTH = 20.0
+LANE_LENGTH = 30.0
 INITIAL_GOLD = 90.0
 MOVEMENT_SPEED = 1.0
 POPULATION_LIMIT = 7
@@ -313,13 +313,13 @@ class Footman(Unit):
 
         self.max_health = 300.0
         self.health = self.max_health
-        self.speed = 0.2
+        self.speed = 0.1
 
         self.attack_range = 2.0
         self.damage = (5, 10)
         # self.attack_animation = 2
         # self.attack_backswing = 2
-        self.interval = 5
+        self.interval = 10
         self.cool_down = 0
 
     def attack(self):
@@ -333,11 +333,11 @@ class Rifleman(Unit):
         self.max_health = 200.0
         self.health = self.max_health
 
-        self.attack_range = 2.0
+        self.attack_range = 5.0
         self.damage = (10, 20)
         # self.attack_animation = 2
         # self.attack_backswing = 2
-        self.interval = 7
+        self.interval = 12
 
     def attack(self):
         return random.uniform(*self.damage)
