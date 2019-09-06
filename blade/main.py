@@ -250,21 +250,48 @@ class Game:
         white_offset = 50
 
         for k, v in self.state['white'].items():
-            k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
-            k_textpos = k_text.get_rect()
-            k_textpos.top = white_offset
-            self.surface.blit(k_text, k_textpos)
-            white_offset += 30
+            if k != 'army':
+                k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
+                k_textpos = k_text.get_rect()
+                k_textpos.top = white_offset
+                self.surface.blit(k_text, k_textpos)
+                white_offset += 30
 
         black_offset = 50
 
         for k, v in self.state['black'].items():
-            k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
-            k_textpos = k_text.get_rect()
-            k_textpos.right = WIDTH
-            k_textpos.top = black_offset
-            self.surface.blit(k_text, k_textpos)
-            black_offset += 30
+            if k != 'army':
+                k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
+                k_textpos = k_text.get_rect()
+                k_textpos.right = WIDTH
+                k_textpos.top = black_offset
+                self.surface.blit(k_text, k_textpos)
+                black_offset += 30
+
+        # render army
+
+        for unit in self.white.state['army']:
+            pygame.draw.rect(
+                self.surface,
+                (0, 255, 0),
+                pygame.Rect(
+                    (WIDTH * (unit.distance / LANE_LENGTH), HEIGHT - 50),
+                    (20, 50 * (unit.health / unit.max_health)),
+                ),
+            )
+
+        for unit in self.black.state['army']:
+            pygame.draw.rect(
+                self.surface,
+                (255, 0, 0),
+                pygame.Rect(
+                    (
+                        WIDTH - WIDTH * (unit.distance / LANE_LENGTH),
+                        HEIGHT - 50,
+                    ),
+                    (20, 50 * (unit.health / unit.max_health)),
+                ),
+            )
 
         self.screen.blit(self.surface, (0, 0))
 

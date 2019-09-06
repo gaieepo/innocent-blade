@@ -7,7 +7,7 @@ FPS = 15
 GOLD_SPEED = 1.0
 WINDMILL_GOLD_SPEED = 2.0
 
-LANE_LENGTH = 5.0
+LANE_LENGTH = 20.0
 INITIAL_GOLD = 90.0
 MOVEMENT_SPEED = 1.0
 POPULATION_LIMIT = 7
@@ -225,7 +225,7 @@ SIMPLE_UNITS = {
 
 class Base:
     HEALTH = [1600.0, 2200.0, 2800.0]
-    REPAIR_COST = 1.0
+    REPAIR_COST = 0.5
     REPAIR_SPEED = 2.0
 
     def __init__(self, faction):
@@ -281,7 +281,7 @@ class Unit:
         for k in kwargs:
             setattr(self, k, kwargs[k])
 
-        self.distance = 0.0
+        self.distance = 0.1
         self.speed = 0.1
 
         self.direction = 0  # -1, 0, 1
@@ -311,7 +311,9 @@ class Footman(Unit):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.health = 300.0
+        self.max_health = 300.0
+        self.health = self.max_health
+        self.speed = 0.2
 
         self.attack_range = 2.0
         self.damage = (5, 10)
@@ -328,7 +330,8 @@ class Rifleman(Unit):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.health = 200.0
+        self.max_health = 200.0
+        self.health = self.max_health
 
         self.attack_range = 2.0
         self.damage = (10, 20)
