@@ -4,8 +4,8 @@ import sys
 import pygame
 
 from utils import (ACTIONS, FPS, GOLD_SPEED, HEIGHT, INITIAL_GOLD, LANE_LENGTH,
-                   SIMPLE_TECHS, SIMPLE_UNITS, UNIT_TEMPLATE, WIDTH,
-                   WINDMILL_GOLD_SPEED, Base, Footman, Rifleman)
+                   MAX_POPULATION, SIMPLE_TECHS, SIMPLE_UNITS, UNIT_TEMPLATE,
+                   WIDTH, WINDMILL_GOLD_SPEED, Base, Footman, Rifleman)
 
 
 class Faction:
@@ -65,46 +65,39 @@ class Faction:
 
         return fr, un
 
-    def step(self, action):
-        # process action
-        # print(f'{self.side} receives action {action}')
+    def _handle_tech(self, action):
+        if (
+            self.techs[action]['building']
+            or self.techs[action]['built']
+            or self.techs[action]['gold_cost'] > self.gold
+            or not self._all_require_satisfied(self.techs[action]['require'])
+        ):
+            print(f'illegal action {action}: tech cannot been built')
+        else:
+            self.techs[action]['building'] = True
+            self.gold -= self.techs[action]['gold_cost']
 
-        # state update
-        # - active update
+    def _handle_unit(self, action):
+        if (
+            self.units[action]['building']
+            or self.units[action]['gold_cost'] > self.gold
+            or not self._all_require_satisfied(self.units[action]['require'])
+            or len(self.army) == MAX_POPULATION
+        ):
+            print(f'illegal action {action}: unit cannot been built')
+        else:
+            self.units[action]['building'] = True
+            self.gold -= self.units[action]['gold_cost']
 
+    def _active_update(self, action):
         if action in self.techs.keys():
-            if (
-                self.techs[action]['building']
-                or self.techs[action]['built']
-                or self.techs[action]['gold_cost'] > self.gold
-                or not self._all_require_satisfied(
-                    self.techs[action]['require']
-                )
-            ):
-                print(f'illegal action {action}: tech cannot been built')
-            else:
-                self.techs[action]['building'] = True
-                self.gold -= self.techs[action]['gold_cost']
+            self._handle_tech(action)
         elif action in self.units.keys():
-            print(self.side, 'receives', action)
-
-            if (
-                self.units[action]['building']
-                or self.units[action]['gold_cost'] > self.gold
-                or not self._all_require_satisfied(
-                    self.units[action]['require']
-                )
-            ):
-                print(f'illegal action {action}: unit cannot been built')
-            else:
-                self.units[action]['building'] = True
-                self.gold -= self.units[action]['gold_cost']
+            self._handle_unit(action)
         elif action in ['repair', 'stop_repair']:
             self.base.set_repair(action == 'repair')
 
-        # - passive update
-        # === count down for techs
-
+    def _tech_count_down(self):
         for k, v in self.techs.items():
             if v['count_down'] and v['building']:
                 v['count_down'] -= 1
@@ -113,8 +106,7 @@ class Faction:
                     v['built'] = True
                     v['building'] = False
 
-        # === count down for units
-
+    def _unit_count_down(self):
         for k, v in self.units.items():
             if v['count_down'] and v['building']:
                 v['count_down'] -= 1
@@ -124,23 +116,13 @@ class Faction:
                     v['count_down'] = v['time_cost']
                     self.army.append(UNIT_TEMPLATE[k](v))
 
-        # === units movement
-        # === units health
-        # delegate by game step
-
-        # === base health
-        self.base.update_max_health(self)
-        self.base.step_repair()
-
-        # === gold
-
+    def _gold_update(self):
         if self.techs['windmill']['built']:
             self.gold_speed = WINDMILL_GOLD_SPEED
 
         self.gold += self.gold_speed - self.base.repairing * Base.REPAIR_COST
 
-        # prepare state
-
+    def _prepare_state(self):
         for k, v in self.techs.items():
             status = 'not'
 
@@ -175,6 +157,32 @@ class Faction:
         self.state['repair'] = self.base.repairing
         self.state['army'] = self.army
 
+    def step(self, action):
+        # state update
+        # - active update
+        self._active_update(action)
+
+        # - passive update
+        # === count down for techs
+        self._tech_count_down()
+
+        # === count down for units
+        self._unit_count_down()
+
+        # === units movement
+        # === units health
+        # delegate by game step
+
+        # === base health
+        self.base.update_max_health(self)
+        self.base.step_repair()
+
+        # === gold
+        self._gold_update()
+
+        # prepare state
+        self._prepare_state()
+
         return self.state
 
 
@@ -192,39 +200,12 @@ class Game:
 
         self.state = {}
 
+    def available_actions(self):
+        return tuple(ACTIONS)
+
     def reset(self):
         self.state['white'] = self.white.reset()
         self.state['black'] = self.black.reset()
-
-        # TODO dummy black
-        dummy_unit1 = Footman(
-            {
-                'name': 'Footman',
-                'require': ['barrack'],
-                'gold_cost': 70,
-                'time_cost': 15,
-                'count_down': 15,
-                'building': False,
-            }
-        )
-        dummy_unit1.direction = 1
-        dummy_unit1.static = False
-        dummy_unit2 = Rifleman(
-            {
-                'name': 'Rifleman',
-                'require': ['barrack', 'blacksmith'],
-                'gold_cost': 90,
-                'time_cost': 15,
-                'count_down': 15,
-                'building': False,
-            }
-        )
-        dummy_unit2.direction = 1
-        dummy_unit2.static = False
-
-        self.black.army.append(dummy_unit1)
-        self.black.army.append(dummy_unit2)
-
         # TODO process aggregated state
 
         return self.state
@@ -246,6 +227,7 @@ class Game:
         fps_textpos.midtop = (WIDTH / 2, 0)
         self.surface.blit(fps_text, fps_textpos)
 
+        # render state text
         white_offset = 50
 
         for k, v in self.state['white'].items():
@@ -255,6 +237,15 @@ class Game:
                 k_textpos.top = white_offset
                 self.surface.blit(k_text, k_textpos)
                 white_offset += 30
+
+        k_text = font.render(
+            f'population: {len(self.white.army)} / {MAX_POPULATION}',
+            1,
+            (10, 10, 10),
+        )
+        k_textpos = k_text.get_rect()
+        k_textpos.top = white_offset
+        self.surface.blit(k_text, k_textpos)
 
         black_offset = 50
 
@@ -267,30 +258,63 @@ class Game:
                 self.surface.blit(k_text, k_textpos)
                 black_offset += 30
 
-        # render army
+        k_text = font.render(
+            f'population: {len(self.black.army)} / {MAX_POPULATION}',
+            1,
+            (10, 10, 10),
+        )
+        k_textpos = k_text.get_rect()
+        k_textpos.right = WIDTH
+        k_textpos.top = black_offset
+        self.surface.blit(k_text, k_textpos)
+
+        # render comic army
 
         for unit in self.white.state['army']:
-            pygame.draw.rect(
-                self.surface,
-                (0, 255, 0),
-                pygame.Rect(
-                    (WIDTH * (unit.distance / LANE_LENGTH), HEIGHT - 50),
-                    (20, 50 * (unit.health / unit.max_health)),
-                ),
-            )
+            if isinstance(unit, Footman):
+                pygame.draw.rect(
+                    self.surface,
+                    (0, 255, 0),
+                    pygame.Rect(
+                        (WIDTH * (unit.distance / LANE_LENGTH), HEIGHT - 50),
+                        (20, 50 * (unit.health / unit.max_health)),
+                    ),
+                )
+            elif isinstance(unit, Rifleman):
+                pygame.draw.rect(
+                    self.surface,
+                    (0, 255, 255),
+                    pygame.Rect(
+                        (WIDTH * (unit.distance / LANE_LENGTH), HEIGHT - 50),
+                        (25, 50 * (unit.health / unit.max_health)),
+                    ),
+                )
 
         for unit in self.black.state['army']:
-            pygame.draw.rect(
-                self.surface,
-                (255, 0, 0),
-                pygame.Rect(
-                    (
-                        WIDTH - WIDTH * (unit.distance / LANE_LENGTH),
-                        HEIGHT - 50,
+            if isinstance(unit, Footman):
+                pygame.draw.rect(
+                    self.surface,
+                    (255, 0, 0),
+                    pygame.Rect(
+                        (
+                            WIDTH - WIDTH * (unit.distance / LANE_LENGTH),
+                            HEIGHT - 50,
+                        ),
+                        (20, 50 * (unit.health / unit.max_health)),
                     ),
-                    (20, 50 * (unit.health / unit.max_health)),
-                ),
-            )
+                )
+            elif isinstance(unit, Rifleman):
+                pygame.draw.rect(
+                    self.surface,
+                    (255, 255, 0),
+                    pygame.Rect(
+                        (
+                            WIDTH - WIDTH * (unit.distance / LANE_LENGTH),
+                            HEIGHT - 50,
+                        ),
+                        (25, 50 * (unit.health / unit.max_health)),
+                    ),
+                )
 
         self.screen.blit(self.surface, (0, 0))
 
@@ -299,13 +323,7 @@ class Game:
 
         self.clock.tick(FPS)
 
-    def step(self, action):
-        # gym support
-        reward = 0
-        done = False
-
-        # global action (white only)
-
+    def _global_action(self, action):
         if action in ['forward', 'backward']:
             for unit in self.white.army:
                 if action == 'forward':
@@ -320,8 +338,7 @@ class Game:
         else:
             print(f'invalid action {action}: unknown action')
 
-        # global movement
-
+    def _global_movement(self):
         for unit in self.white.army:
             if unit.direction == 1 and not unit._in_range(
                 self.black._frontier()[0]
@@ -360,8 +377,7 @@ class Game:
                 # keep the direction forward but remain static
                 unit.static = True
 
-        # global health
-
+    def _global_health(self):
         for unit in self.white.army:
             fr, un = self.black._frontier()
             target_distance = LANE_LENGTH - fr - unit.distance
@@ -401,6 +417,20 @@ class Game:
             elif target_distance <= unit.attack_range and unit.cool_down > 0:
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
                 # TODO hit and run
+
+    def step(self, action):
+        # gym support
+        reward = 0  # 0 for most cases because not scored at the moment
+        done = False
+
+        # global action (white only)
+        self._global_action(action)
+
+        # global movement
+        self._global_movement()
+
+        # global health
+        self._global_health()
 
         return self.state, reward, done, {}
 
