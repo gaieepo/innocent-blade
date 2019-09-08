@@ -2,13 +2,13 @@ import random
 
 HEIGHT = 720
 WIDTH = 960
-FPS = 15
+FPS = 10
 
 GOLD_SPEED = 1.0
 WINDMILL_GOLD_SPEED = 2.0
 
-LANE_LENGTH = 30.0
-INITIAL_GOLD = 999.0  # 90.0
+LANE_LENGTH = 10.0
+INITIAL_GOLD = 90.0
 MOVEMENT_SPEED = 1.0
 MAX_POPULATION = 7
 
@@ -242,7 +242,7 @@ class Base:
 
     def __repr__(self):
         return (
-            f'<{self.faction.side} {self.fmt_direction} H:{self.health:.1f}>'
+            f'<{self.faction.side} H:{self.health:.1f}>'
         )
 
     def set_repair(self, flag):
@@ -291,7 +291,7 @@ class Unit:
 
     @property
     def fmt_direction(self):
-        l = ['<-', 'O', '->']
+        l = ['v', 'O', '^']
 
         return l[self.direction + 1]
 
@@ -313,14 +313,12 @@ class Footman(Unit):
 
         self.max_health = 300.0
         self.health = self.max_health
-        self.speed = 0.1
 
         self.attack_range = 2.0
         self.damage = (5, 10)
         # self.attack_animation = 2
         # self.attack_backswing = 2
         self.interval = 10
-        self.cool_down = 0
 
     def attack(self):
         return random.uniform(*self.damage)
@@ -334,7 +332,7 @@ class Rifleman(Unit):
         self.health = self.max_health
 
         self.attack_range = 5.0
-        self.damage = (10, 20)
+        self.damage = (20, 30)
         # self.attack_animation = 2
         # self.attack_backswing = 2
         self.interval = 12

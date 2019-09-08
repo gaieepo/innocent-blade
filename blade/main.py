@@ -1,5 +1,7 @@
 import copy
+import random
 import sys
+from itertools import count
 
 import pygame
 
@@ -20,20 +22,22 @@ class Faction:
 
         self.base = Base(self)
 
-        self.state = {}
+        self.population = 0
         self.army = []
+
+        self.render_state = {}
 
     def reset(self):
         self.techs = copy.deepcopy(SIMPLE_TECHS)
         self.units = copy.deepcopy(SIMPLE_UNITS)
+
         self.gold = INITIAL_GOLD
         self.gold_speed = GOLD_SPEED
-        self.base = Base(self)
-        self.army = []
-        self.state = {}
-        # TODO process proper state
 
-        return self.state
+        self.base = Base(self)
+
+        self.population = 0
+        self.army = []
 
     def _all_require_satisfied(self, reqs):
         rv = True
@@ -72,7 +76,9 @@ class Faction:
             or self.techs[action]['gold_cost'] > self.gold
             or not self._all_require_satisfied(self.techs[action]['require'])
         ):
-            print(f'illegal action {action}: tech cannot been built')
+            print(
+                f'{self.side} illegal action {action}: tech cannot been built'
+            )
         else:
             self.techs[action]['building'] = True
             self.gold -= self.techs[action]['gold_cost']
@@ -82,12 +88,15 @@ class Faction:
             self.units[action]['building']
             or self.units[action]['gold_cost'] > self.gold
             or not self._all_require_satisfied(self.units[action]['require'])
-            or len(self.army) == MAX_POPULATION
+            or self.population >= MAX_POPULATION
         ):
-            print(f'illegal action {action}: unit cannot been built')
+            print(
+                f'{self.side} illegal action {action}: unit cannot been built'
+            )
         else:
-            self.units[action]['building'] = True
+            self.population += 1
             self.gold -= self.units[action]['gold_cost']
+            self.units[action]['building'] = True
 
     def _active_update(self, action):
         if action in self.techs.keys():
@@ -122,7 +131,11 @@ class Faction:
 
         self.gold += self.gold_speed - self.base.repairing * Base.REPAIR_COST
 
-    def _prepare_state(self):
+    def _prepare_render_state(self):
+        """
+        for rendering ONLY
+        """
+
         for k, v in self.techs.items():
             status = 'not'
 
@@ -137,7 +150,7 @@ class Faction:
             if v['built']:
                 status = 'built'
 
-            self.state[k] = status
+            self.render_state[k] = status
 
         for k, v in self.units.items():
             status = 'not'
@@ -150,15 +163,15 @@ class Faction:
             if v['building']:
                 status = 'building'
 
-            self.state[k] = status
+            self.render_state[k] = status
 
-        self.state['gold'] = self.gold
-        self.state['base'] = self.base.health
-        self.state['repair'] = self.base.repairing
-        self.state['army'] = self.army
+        self.render_state['gold'] = self.gold
+        self.render_state['base'] = self.base.health
+        self.render_state['repair'] = self.base.repairing
+        self.render_state['frontier'] = '{:.1f} {}'.format(*self._frontier())
+        self.render_state['population'] = self.population
 
     def step(self, action):
-        # state update
         # - active update
         self._active_update(action)
 
@@ -180,10 +193,8 @@ class Faction:
         # === gold
         self._gold_update()
 
-        # prepare state
-        self._prepare_state()
-
-        return self.state
+        # prepare state for render
+        self._prepare_render_state()
 
 
 class Game:
@@ -200,13 +211,34 @@ class Game:
 
         self.state = {}
 
+    @property
     def available_actions(self):
         return tuple(ACTIONS)
 
+    @property
+    def n_actions(self):
+        return len(ACTIONS)
+
     def reset(self):
-        self.state['white'] = self.white.reset()
-        self.state['black'] = self.black.reset()
-        # TODO process aggregated state
+        self.white.reset()
+        self.black.reset()
+
+        # TODO faction is not returning inner state
+        # need to process aggregated state externally
+        # self.black.army.append(
+        #     Rifleman(
+        #         {
+        #             'name': 'Rifleman',
+        #             'require': ['barrack', 'blacksmith'],
+        #             'gold_cost': 90,
+        #             'time_cost': 15,
+        #             'count_down': 15,
+        #             'building': False,
+        #         }
+        #     )
+        # )
+
+        self.state = {}
 
         return self.state
 
@@ -230,7 +262,7 @@ class Game:
         # render state text
         white_offset = 50
 
-        for k, v in self.state['white'].items():
+        for k, v in self.white.render_state.items():
             if k != 'army':
                 k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
                 k_textpos = k_text.get_rect()
@@ -238,18 +270,9 @@ class Game:
                 self.surface.blit(k_text, k_textpos)
                 white_offset += 30
 
-        k_text = font.render(
-            f'population: {len(self.white.army)} / {MAX_POPULATION}',
-            1,
-            (10, 10, 10),
-        )
-        k_textpos = k_text.get_rect()
-        k_textpos.top = white_offset
-        self.surface.blit(k_text, k_textpos)
-
         black_offset = 50
 
-        for k, v in self.state['black'].items():
+        for k, v in self.black.render_state.items():
             if k != 'army':
                 k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
                 k_textpos = k_text.get_rect()
@@ -258,26 +281,20 @@ class Game:
                 self.surface.blit(k_text, k_textpos)
                 black_offset += 30
 
-        k_text = font.render(
-            f'population: {len(self.black.army)} / {MAX_POPULATION}',
-            1,
-            (10, 10, 10),
-        )
-        k_textpos = k_text.get_rect()
-        k_textpos.right = WIDTH
-        k_textpos.top = black_offset
-        self.surface.blit(k_text, k_textpos)
-
         # render comic army
 
-        for unit in self.white.state['army']:
+        for unit in self.white.army:
             if isinstance(unit, Footman):
                 pygame.draw.rect(
                     self.surface,
                     (0, 255, 0),
                     pygame.Rect(
-                        (WIDTH * (unit.distance / LANE_LENGTH), HEIGHT - 50),
-                        (20, 50 * (unit.health / unit.max_health)),
+                        (
+                            50.0
+                            + (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
+                            HEIGHT - 30 * (unit.health / unit.max_health),
+                        ),
+                        (20, 30 * (unit.health / unit.max_health)),
                     ),
                 )
             elif isinstance(unit, Rifleman):
@@ -285,22 +302,28 @@ class Game:
                     self.surface,
                     (0, 255, 255),
                     pygame.Rect(
-                        (WIDTH * (unit.distance / LANE_LENGTH), HEIGHT - 50),
+                        (
+                            50.0
+                            + (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
+                            HEIGHT - 50 * (unit.health / unit.max_health),
+                        ),
                         (25, 50 * (unit.health / unit.max_health)),
                     ),
                 )
 
-        for unit in self.black.state['army']:
+        for unit in self.black.army:
             if isinstance(unit, Footman):
                 pygame.draw.rect(
                     self.surface,
                     (255, 0, 0),
                     pygame.Rect(
                         (
-                            WIDTH - WIDTH * (unit.distance / LANE_LENGTH),
-                            HEIGHT - 50,
+                            WIDTH
+                            - 50.0
+                            - (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
+                            HEIGHT - 30 * (unit.health / unit.max_health),
                         ),
-                        (20, 50 * (unit.health / unit.max_health)),
+                        (20, 30 * (unit.health / unit.max_health)),
                     ),
                 )
             elif isinstance(unit, Rifleman):
@@ -309,8 +332,10 @@ class Game:
                     (255, 255, 0),
                     pygame.Rect(
                         (
-                            WIDTH - WIDTH * (unit.distance / LANE_LENGTH),
-                            HEIGHT - 50,
+                            WIDTH
+                            - 50.0
+                            - (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
+                            HEIGHT - 50 * (unit.health / unit.max_health),
                         ),
                         (25, 50 * (unit.health / unit.max_health)),
                     ),
@@ -323,20 +348,31 @@ class Game:
 
         self.clock.tick(FPS)
 
-    def _global_action(self, action):
-        if action in ['forward', 'backward']:
-            for unit in self.white.army:
-                if action == 'forward':
-                    unit.direction = 1
-                elif action == 'backward':
-                    if unit.distance - unit.speed >= 0:
-                        unit.direction = -1
+    def _global_action(self, white_action, black_action):
+        for side, action in (('white', white_action), ('black', black_action)):
+            if action in ['forward', 'backward']:
+                if side == 'white':
+                    for unit in self.white.army:
+                        if action == 'forward':
+                            unit.direction = 1
+                        elif action == 'backward':
+                            if unit.distance - unit.speed >= 0:
+                                unit.direction = -1
+                elif side == 'black':
+                    for unit in self.black.army:
+                        if action == 'forward':
+                            unit.direction = 1
+                        elif action == 'backward':
+                            if unit.distance - unit.speed >= 0:
+                                unit.direction = -1
 
-        elif action in ACTIONS:
-            self.state['white'] = self.white.step(action)
-            self.state['black'] = self.black.step('null')
-        else:
-            print(f'invalid action {action}: unknown action')
+            elif action in ACTIONS:
+                if side == 'white':
+                    self.white.step(action)
+                elif side == 'black':
+                    self.black.step(action)
+            else:
+                print(f'invalid {side} action {action}: unknown action')
 
     def _global_movement(self):
         for unit in self.white.army:
@@ -378,6 +414,8 @@ class Game:
                 unit.static = True
 
     def _global_health(self):
+        done = False
+
         for unit in self.white.army:
             fr, un = self.black._frontier()
             target_distance = LANE_LENGTH - fr - unit.distance
@@ -388,11 +426,12 @@ class Game:
                 if un.health <= 0:
                     if not isinstance(un, Base):
                         self.black.army.remove(un)
+                        self.black.population -= 1
                     else:
                         # TODO process done event
                         done = True
+                        return done
 
-                        break
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
             elif target_distance <= unit.attack_range and unit.cool_down > 0:
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
@@ -408,29 +447,30 @@ class Game:
                 if un.health <= 0:
                     if not isinstance(un, Base):
                         self.white.army.remove(un)
+                        self.white.population -= 1
                     else:
                         # TODO process done event
                         done = True
+                        return done
 
-                        break
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
             elif target_distance <= unit.attack_range and unit.cool_down > 0:
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
                 # TODO hit and run
 
-    def step(self, action):
+    def step(self, white_action, black_action):
         # gym support
         reward = 0  # 0 for most cases because not scored at the moment
         done = False
 
-        # global action (white only)
-        self._global_action(action)
+        # global action
+        self._global_action(white_action, black_action)
 
         # global movement
         self._global_movement()
 
         # global health
-        self._global_health()
+        done = self._global_health()
 
         return self.state, reward, done, {}
 
@@ -439,35 +479,53 @@ class Game:
         sys.exit()
 
 
+def human_agent():
+    action = 'null'
+
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_q:
+                action = 'close'
+            elif event.key == pygame.K_1:
+                action = 'barrack'
+            elif event.key == pygame.K_2:
+                action = 'blacksmith'
+            elif event.key == pygame.K_3:
+                action = 'windmill'
+            elif event.key == pygame.K_4:
+                action = 'footman'
+            elif event.key == pygame.K_5:
+                action = 'rifleman'
+            elif event.key == pygame.K_SPACE:
+                action = 'forward'
+            elif event.key == pygame.K_BACKSPACE:
+                action = 'backward'
+            elif event.key == pygame.K_r:
+                action = 'repair'
+            elif event.key == pygame.K_t:
+                action = 'stop_repair'
+
+    return action
+
+
+def random_agent(actions):
+    return random.choice(actions)
+
+
 if __name__ == "__main__":
     game = Game()
     state = game.reset()
 
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_q:
-                    game.close()
-                elif event.key == pygame.K_1:
-                    state, reward, done, info = game.step('barrack')
-                elif event.key == pygame.K_2:
-                    state, reward, done, info = game.step('blacksmith')
-                elif event.key == pygame.K_3:
-                    state, reward, done, info = game.step('windmill')
-                elif event.key == pygame.K_4:
-                    state, reward, done, info = game.step('footman')
-                elif event.key == pygame.K_5:
-                    state, reward, done, info = game.step('rifleman')
-                elif event.key == pygame.K_SPACE:
-                    state, reward, done, info = game.step('forward')
-                elif event.key == pygame.K_BACKSPACE:
-                    state, reward, done, info = game.step('backward')
-                elif event.key == pygame.K_r:
-                    state, reward, done, info = game.step('repair')
-                elif event.key == pygame.K_t:
-                    state, reward, done, info = game.step('stop_repair')
-        else:
-            state, reward, done, info = game.step('null')
+    for c in count():
+        white_action = human_agent()
+        black_action = random_agent(game.available_actions)
+
+        print(c, white_action, black_action)
+
+        if white_action == 'close':
+            game.close()
+
+        state, reward, done, info = game.step(white_action, black_action)
 
         if done:
             break
