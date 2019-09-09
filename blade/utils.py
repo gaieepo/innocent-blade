@@ -15,6 +15,7 @@ MAX_POPULATION = 7
 
 ACTIONS = [
     'null',
+    'close',
     'barrack',
     'blacksmith',
     'windmill',

@@ -212,8 +212,14 @@ class Game:
         self.state = {}
 
     @property
-    def available_actions(self):
+    def all_actions(self):
         return tuple(ACTIONS)
+
+    @property
+    def available_actions(self):
+        actions = [action for action in ACTIONS if action != 'close']
+
+        return tuple(actions)
 
     @property
     def n_actions(self):
@@ -430,6 +436,7 @@ class Game:
                     else:
                         # TODO process done event
                         done = True
+
                         return done
 
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
@@ -451,6 +458,7 @@ class Game:
                     else:
                         # TODO process done event
                         done = True
+
                         return done
 
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
