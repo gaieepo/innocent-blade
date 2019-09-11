@@ -2,7 +2,7 @@ import random
 
 HEIGHT = 720
 WIDTH = 960
-FPS = 10
+FPS = 60
 
 GOLD_SPEED = 1.0
 WINDMILL_GOLD_SPEED = 2.0
