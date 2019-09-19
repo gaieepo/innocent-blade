@@ -3,6 +3,7 @@ import random
 import sys
 from itertools import count
 
+import numpy as np
 import pygame
 
 from utils import (ACTIONS, FPS, GOLD_SPEED, HEIGHT, INITIAL_GOLD, LANE_LENGTH,
@@ -209,8 +210,6 @@ class Game:
         self.white = Faction('white')
         self.black = Faction('black')
 
-        self.state = {}
-
     @property
     def all_actions(self):
         return tuple(ACTIONS)
@@ -244,9 +243,7 @@ class Game:
         #     )
         # )
 
-        self.state = {}
-
-        return self.state
+        return {}
 
     def render(self, mode='human', close=False):
         self.surface.fill((255, 255, 255))
@@ -480,7 +477,7 @@ class Game:
         # global health
         done = self._global_health()
 
-        return self.state, reward, done, {}
+        return {}, reward, done, {}
 
     def close(self):
         pygame.quit()
@@ -520,12 +517,23 @@ def random_agent(actions):
     return random.choice(actions)
 
 
+def numpy_agent(actions):
+    return random.choice(actions)
+
+
 if __name__ == "__main__":
     game = Game()
     state = game.reset()
 
+    # naive numpy agent
+    H = 200  # number of hidden layer neurons
+    D = 100  # input dimensionality (# of grid)
+    model = {}
+    model['W1'] = np.random.randn(H, D) / np.sqrt(D)  # xavier
+    model['W2'] = np.random.randn(H) / np.sqrt(H)
+
     for c in count():
-        white_action = human_agent()
+        white_action = human_agent(state)
         black_action = random_agent(game.available_actions)
 
         print(c, white_action, black_action)
