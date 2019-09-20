@@ -4,14 +4,12 @@ HEIGHT = 720
 WIDTH = 960
 FPS = 60
 
+INITIAL_GOLD = 90.0
 GOLD_SPEED = 1.0
 WINDMILL_GOLD_SPEED = 2.0
 
 LANE_LENGTH = 10.0
-INITIAL_GOLD = 90.0
-MOVEMENT_SPEED = 1.0
 MAX_POPULATION = 7
-
 
 ACTIONS = [
     'null',
@@ -242,9 +240,7 @@ class Base:
         return '+' if self.repairing else '_'
 
     def __repr__(self):
-        return (
-            f'<{self.faction.side} H:{self.health:.1f}>'
-        )
+        return f'<{self.faction.side} H:{self.health:.1f}>'
 
     def set_repair(self, flag):
         if flag:

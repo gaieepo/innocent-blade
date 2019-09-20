@@ -12,7 +12,7 @@ from utils import (ACTIONS, FPS, GOLD_SPEED, HEIGHT, INITIAL_GOLD, LANE_LENGTH,
 
 
 class Faction:
-    def __init__(self, side='white'):
+    def __init__(self, side):
         self.side = side
 
         self.techs = copy.deepcopy(SIMPLE_TECHS)
@@ -224,28 +224,127 @@ class Game:
     def n_actions(self):
         return len(ACTIONS)
 
+    def _observation(self):
+        # TODO faction is not returning inner state
+        # need to process aggregated state externally
+        # items need to return as state:
+        state = {'white': [], 'black': []}
+
+        # 0. some globals
+        state['white'].append(LANE_LENGTH)
+        state['black'].append(LANE_LENGTH)
+
+        # 1. current gold (gold speed determined by tech)
+        state['white'].extend([self.white.gold, self.white.gold_speed])
+        state['black'].extend([self.black.gold, self.black.gold_speed])
+
+        # 2. techs
+
+        for k, v in self.white.techs.items():
+            state['white'].extend(
+                [
+                    v['time_cost'],
+                    v['count_down'],
+                    v['gold_cost'],
+                    v['built'],
+                    v['building'],
+                ]
+            )
+
+        for k, v in self.black.techs.items():
+            state['black'].extend(
+                [
+                    v['time_cost'],
+                    v['count_down'],
+                    v['gold_cost'],
+                    v['built'],
+                    v['building'],
+                ]
+            )
+
+        # 3. army (population, attack, health determined by tech)
+
+        for i in range(MAX_POPULATION):
+            if i < len(self.white.army):
+                state['white'].extend(
+                    [
+                        self.white.army[i].gold_cost,
+                        self.white.army[i].time_cost,
+                        self.white.army[i].count_down,
+                        self.white.army[i].building,
+                        self.white.army[i].distance,
+                        self.white.army[i].speed,
+                        self.white.army[i].direction,
+                        self.white.army[i].cool_down,
+                        self.white.army[i].max_health,
+                        self.white.army[i].health,
+                        self.white.army[i].attack_range,
+                        *self.white.army[i].damage,
+                        self.white.army[i].interval,
+                    ]
+                )
+            else:
+                state['white'].extend([0] * 13)
+
+            if i < len(self.black.army):
+                state['black'].extend(
+                    [
+                        self.black.army[i].gold_cost,
+                        self.black.army[i].time_cost,
+                        self.black.army[i].count_down,
+                        self.black.army[i].building,
+                        self.black.army[i].distance,
+                        self.black.army[i].speed,
+                        self.black.army[i].direction,
+                        self.black.army[i].cool_down,
+                        self.black.army[i].max_health,
+                        self.black.army[i].health,
+                        self.black.army[i].attack_range,
+                        *self.black.army[i].damage,
+                        self.black.army[i].interval,
+                    ]
+                )
+            else:
+                state['black'].extend([0] * 13)
+
+        # 4. base (health determined by tech)
+        state['white'].extend(
+            [
+                self.white.base.repairing,
+                self.white.base.max_health,
+                self.white.base.health,
+            ]
+        )
+        state['black'].extend(
+            [
+                self.black.base.repairing,
+                self.black.base.max_health,
+                self.black.base.health,
+            ]
+        )
+
+        # format
+        try:
+            state['white'] = np.array(state['white']).astype(np.float32)
+            state['black'] = np.array(state['black']).astype(np.float32)
+        except:
+            import pdb; pdb.set_trace()  # XXX BREAKPOINT
+
+        return state
+
     def reset(self):
+        # reset two factions
         self.white.reset()
         self.black.reset()
 
-        # TODO faction is not returning inner state
-        # need to process aggregated state externally
-        # self.black.army.append(
-        #     Rifleman(
-        #         {
-        #             'name': 'Rifleman',
-        #             'require': ['barrack', 'blacksmith'],
-        #             'gold_cost': 90,
-        #             'time_cost': 15,
-        #             'count_down': 15,
-        #             'building': False,
-        #         }
-        #     )
-        # )
+        # prepare state
+        state = self._observation()
 
-        return {}
+        return state
 
-    def render(self, mode='human', close=False):
+    def render(
+        self, mode='human', close=False, white_action=None, black_action=None
+    ):
         self.surface.fill((255, 255, 255))
 
         font = pygame.font.Font(None, 36)
@@ -263,6 +362,11 @@ class Game:
         self.surface.blit(fps_text, fps_textpos)
 
         # render state text
+        # (optional) render action
+        if white_action is not None and black_action is not None:
+            self.white.render_state['action'] = white_action
+            self.black.render_state['action'] = black_action
+
         white_offset = 50
 
         for k, v in self.white.render_state.items():
@@ -477,7 +581,10 @@ class Game:
         # global health
         done = self._global_health()
 
-        return {}, reward, done, {}
+        # prepare state
+        state = self._observation()
+
+        return state, reward, done, {}
 
     def close(self):
         pygame.quit()
@@ -517,8 +624,16 @@ def random_agent(actions):
     return random.choice(actions)
 
 
-def numpy_agent(actions):
-    return random.choice(actions)
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+
+def numpy_agent(state, actions):
+    h = np.dot(model['W1'], state)
+    h[h < 0] = 0
+    logp = np.dot(model['W2'], h)
+
+    return actions[np.argmax(sigmoid(logp))]
 
 
 if __name__ == "__main__":
@@ -527,14 +642,14 @@ if __name__ == "__main__":
 
     # naive numpy agent
     H = 200  # number of hidden layer neurons
-    D = 100  # input dimensionality (# of grid)
+    D = 112  # input dimensionality (# of grid)
     model = {}
     model['W1'] = np.random.randn(H, D) / np.sqrt(D)  # xavier
-    model['W2'] = np.random.randn(H) / np.sqrt(H)
+    model['W2'] = np.random.randn(len(game.available_actions), H) / np.sqrt(H)
 
     for c in count():
-        white_action = human_agent(state)
-        black_action = random_agent(game.available_actions)
+        white_action = human_agent()
+        black_action = numpy_agent(state['black'], game.available_actions)
 
         print(c, white_action, black_action)
 
@@ -546,6 +661,6 @@ if __name__ == "__main__":
         if done:
             break
 
-        game.render()
+        game.render(white_action=white_action, black_action=black_action)
 
     game.close()
