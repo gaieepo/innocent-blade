@@ -4,9 +4,10 @@ import sys
 import numpy as np
 import pygame
 
-from utils import (ACTIONS, FPS, GOLD_SPEED, HEIGHT, INITIAL_GOLD, LANE_LENGTH,
-                   MAX_POPULATION, SIMPLE_TECHS, SIMPLE_UNITS, UNIT_TEMPLATE,
-                   WIDTH, WINDMILL_GOLD_SPEED, Base, Footman, Rifleman)
+from utils import (FPS, FULL_ACTIONS, GOLD_SPEED, HEIGHT, INITIAL_GOLD,
+                   LANE_LENGTH, MAX_POPULATION, SIMPLE_TECHS, SIMPLE_UNITS,
+                   UNIT_TEMPLATE, WIDTH, WINDMILL_GOLD_SPEED, Base, Footman,
+                   Rifleman)
 
 
 class Faction:
@@ -197,18 +198,19 @@ class Faction:
 
 
 class Game:
-    def __init__(self):
+    def __init__(self, actions=None):
         self.screen = None
         self.white = Faction('white')
         self.black = Faction('black')
 
-    @property
-    def available_actions(self):
-        return tuple(action for action in ACTIONS if action != 'close')
+        if actions is None:
+            self.actions = FULL_ACTIONS
+        else:
+            self.actions = actions
 
     @property
-    def n_actions(self):
-        return len(ACTIONS)
+    def available_actions(self):
+        return tuple(action for action in self.actions if action != 'close')
 
     def _observation(self):
         # TODO faction is not returning inner state
@@ -335,7 +337,6 @@ class Game:
             self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
             self.surface = pygame.Surface(self.screen.get_size())
             self.surface.fill((255, 255, 255))
-
 
         self.surface.fill((255, 255, 255))
 
@@ -466,7 +467,7 @@ class Game:
                             if unit.distance - unit.speed >= 0:
                                 unit.direction = -1
 
-            elif action in ACTIONS:
+            elif action in self.actions:
                 if side == 'white':
                     self.white.step(action)
                 elif side == 'black':
@@ -560,6 +561,8 @@ class Game:
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
                 # TODO hit and run
 
+        return done
+
     def step(self, white_action, black_action):
         # gym support
         reward = 0  # 0 for most cases because not scored at the moment
@@ -579,6 +582,9 @@ class Game:
 
         return state, reward, done, {}
 
-    def close(self):
-        pygame.quit()
-        sys.exit()
+    def close(self, close_all=False):
+        if self.screen is not None:
+            pygame.quit()
+
+        if close_all:
+            sys.exit()

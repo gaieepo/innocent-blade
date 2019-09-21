@@ -35,8 +35,6 @@ SIMPLE_ACTIONS = [
     'forward',
 ]
 
-ACTIONS = SIMPLE_ACTIONS
-
 SIMPLE_TECHS = {
     'barrack': {
         'name': 'Barrack',

@@ -5,6 +5,7 @@ import numpy as np
 import pygame
 
 from game import Game
+from utils import SIMPLE_ACTIONS
 
 
 ###################################################
@@ -61,8 +62,9 @@ def numpy_agent(state, actions):
 
 
 if __name__ == "__main__":
-    game = Game()
+    game = Game(SIMPLE_ACTIONS)
     state = game.reset()
+    game.render()
 
     # naive numpy agent
     H = 200  # number of hidden layer neurons
@@ -72,17 +74,19 @@ if __name__ == "__main__":
     model['W2'] = np.random.randn(len(game.available_actions), H) / np.sqrt(H)
 
     for c in count():
-        white_action = human_agent()
-        black_action = numpy_agent(state['black'], game.available_actions)
+        white_action = numpy_agent(state['white'], game.available_actions)
+        black_action = random_agent(game.available_actions)
 
         print(c, white_action, black_action)
 
-        if white_action == 'close':
+        # handle human close action
+        if white_action == 'close' or black_action == 'close':
             game.close()
 
         state, reward, done, info = game.step(white_action, black_action)
 
         if done:
+            print(f'Reward: {reward}')
             break
 
         game.render(white_action=white_action, black_action=black_action)
