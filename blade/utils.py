@@ -295,6 +295,7 @@ class Unit:
         self.static = True
 
         self.cool_down = 0
+        self.dead = False
 
     @property
     def fmt_direction(self):

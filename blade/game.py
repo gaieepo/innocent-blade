@@ -59,7 +59,7 @@ class Faction:
         fr, un = 0.0, None
 
         for unit in self.army:
-            if unit.distance > fr:
+            if not unit.dead and unit.distance > fr:
                 fr = unit.distance
                 un = unit
 
@@ -519,6 +519,8 @@ class Game:
     def _global_health(self):
         end_status = None
 
+        # damage and health calculation
+
         for unit in self.white.army:
             fr, un = self.black._frontier()
             target_distance = LANE_LENGTH - fr - unit.distance
@@ -528,7 +530,8 @@ class Game:
 
                 if un.health <= 0:
                     if not isinstance(un, Base):
-                        self.black.army.remove(un)
+                        # self.black.army.remove(un)
+                        un.dead = True
                         self.black.population -= 1
                     else:
                         end_status = 'white'
@@ -536,7 +539,9 @@ class Game:
                         return end_status
 
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
-            elif target_distance <= unit.attack_range and unit.cool_down > 0:
+            elif (
+                target_distance <= unit.attack_range and unit.cool_down > 0
+            ):
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
                 # TODO hit and run
 
@@ -549,7 +554,8 @@ class Game:
 
                 if un.health <= 0:
                     if not isinstance(un, Base):
-                        self.white.army.remove(un)
+                        # self.white.army.remove(un)
+                        un.dead = True
                         self.white.population -= 1
                     else:
                         end_status = 'black'
@@ -557,9 +563,21 @@ class Game:
                         return end_status
 
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
-            elif target_distance <= unit.attack_range and unit.cool_down > 0:
+            elif (
+                target_distance <= unit.attack_range and unit.cool_down > 0
+            ):
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
                 # TODO hit and run
+
+        # remove dead units
+
+        for unit in self.white.army:
+            if unit.dead:
+                self.white.army.remove(unit)
+
+        for unit in self.black.army:
+            if unit.dead:
+                self.black.army.remove(unit)
 
         return end_status
 

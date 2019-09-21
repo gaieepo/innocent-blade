@@ -62,6 +62,8 @@ def numpy_agent(state, actions):
 
 
 if __name__ == "__main__":
+    random.seed(42)
+
     # env setup
     game = Game(simple=True)
     state = game.reset()
@@ -75,6 +77,8 @@ if __name__ == "__main__":
     model = {}
     model['W1'] = np.random.randn(H, D) / np.sqrt(D)  # xavier
     model['W2'] = np.random.randn(len(game.available_actions), H) / np.sqrt(H)
+
+    white_wins, black_wins = 0, 0
 
     while True:  # for c in count():
         if render:
@@ -94,5 +98,10 @@ if __name__ == "__main__":
             state = game.reset()
 
         if reward[0] != 0:
-            suffix = '!!!' if reward[0] == 1 else ''
-            print(f'Ep: {episode_number} reward: {reward}{suffix}')
+            # suffix = '!!!' if reward[0] == 1 else ''
+            suffix = ''
+            if reward[0] == 1:
+                white_wins += 1
+            else:
+                black_wins += 1
+            print(f'Ep: {episode_number} reward: {reward}{suffix} white: {white_wins} black: {black_wins} white rate: {100. * white_wins / (white_wins + black_wins)}%')
