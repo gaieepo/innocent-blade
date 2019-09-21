@@ -171,7 +171,7 @@ class Faction:
         self.render_state['frontier'] = '{:.1f} {}'.format(*self._frontier())
         self.render_state['population'] = self.population
 
-    def step(self, action):
+    def faction_step(self, action):
         # - active update
         self._active_update(action)
 
@@ -469,9 +469,9 @@ class Game:
 
             elif action in self.actions:
                 if side == 'white':
-                    self.white.step(action)
+                    self.white.faction_step(action)
                 elif side == 'black':
-                    self.black.step(action)
+                    self.black.faction_step(action)
             else:
                 print(f'invalid {side} action {action}: unknown action')
 

@@ -62,24 +62,30 @@ def numpy_agent(state, actions):
 
 
 if __name__ == "__main__":
+    # env setup
     game = Game(SIMPLE_ACTIONS)
     state = game.reset()
-    game.render()
+    white_action, black_action = 'null', 'null'
 
     # naive numpy agent
     H = 200  # number of hidden layer neurons
     D = 112  # input dimensionality (# of grid)
+    render = False
     model = {}
     model['W1'] = np.random.randn(H, D) / np.sqrt(D)  # xavier
     model['W2'] = np.random.randn(len(game.available_actions), H) / np.sqrt(H)
 
     for c in count():
+        if render:
+            game.render(white_action=white_action, black_action=black_action)
+
         white_action = numpy_agent(state['white'], game.available_actions)
         black_action = random_agent(game.available_actions)
 
         print(c, white_action, black_action)
 
         # handle human close action
+
         if white_action == 'close' or black_action == 'close':
             game.close()
 
@@ -87,8 +93,7 @@ if __name__ == "__main__":
 
         if done:
             print(f'Reward: {reward}')
-            break
 
-        game.render(white_action=white_action, black_action=black_action)
+            break
 
     game.close()
