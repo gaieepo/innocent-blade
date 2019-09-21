@@ -2,7 +2,7 @@ import random
 
 HEIGHT = 720
 WIDTH = 960
-FPS = 60
+FPS = 50
 
 INITIAL_GOLD = 90.0
 GOLD_SPEED = 1.0
