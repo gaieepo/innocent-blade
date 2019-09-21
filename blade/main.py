@@ -89,6 +89,9 @@ if __name__ == "__main__":
 
         # print(c, white_action, black_action)
 
+        if white_action == 'close' or black_action == 'close':
+            break
+
         state, reward, done, info = game.step(white_action, black_action)
 
         if done:
@@ -99,8 +102,13 @@ if __name__ == "__main__":
         if reward[0] != 0:
             # suffix = '!!!' if reward[0] == 1 else ''
             suffix = ''
+
             if reward[0] == 1:
                 white_wins += 1
             else:
                 black_wins += 1
-            print(f'Ep: {episode_number} reward: {reward}{suffix} white: {white_wins} black: {black_wins} white rate: {100. * white_wins / (white_wins + black_wins)}%')
+            print(
+                f'Ep: {episode_number} reward: {reward}{suffix} white: {white_wins} black: {black_wins} white rate: {100. * white_wins / (white_wins + black_wins)}%'
+            )
+
+    game.close()

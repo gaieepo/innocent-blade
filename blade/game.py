@@ -338,7 +338,6 @@ class Game:
             self.clock = pygame.time.Clock()
             self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
             self.surface = pygame.Surface(self.screen.get_size())
-            self.surface.fill((255, 255, 255))
 
         self.surface.fill((255, 255, 255))
 
@@ -511,7 +510,7 @@ class Game:
                     unit.static = True
                     unit.direction = 0
             elif unit.direction == 1 and unit._in_range(
-                self.black._frontier()[0]
+                self.white._frontier()[0]
             ):
                 # keep the direction forward but remain static
                 unit.static = True
@@ -608,7 +607,7 @@ class Game:
 
         return state, reward, done, {}
 
-    def close(self, close_all=False):
+    def close(self, close_all=True):
         if self.screen is not None:
             pygame.quit()
 
