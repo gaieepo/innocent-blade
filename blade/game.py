@@ -5,9 +5,9 @@ import numpy as np
 import pygame
 
 from utils import (FPS, FULL_ACTIONS, GOLD_SPEED, HEIGHT, INITIAL_GOLD,
-                   LANE_LENGTH, MAX_POPULATION, SIMPLE_TECHS, SIMPLE_UNITS,
-                   UNIT_TEMPLATE, WIDTH, WINDMILL_GOLD_SPEED, Base, Footman,
-                   Rifleman)
+                   LANE_LENGTH, MAX_POPULATION, SIMPLE_ACTIONS, SIMPLE_TECHS,
+                   SIMPLE_UNITS, UNIT_TEMPLATE, WIDTH, WINDMILL_GOLD_SPEED,
+                   Base, Footman, Rifleman)
 
 
 class Faction:
@@ -76,9 +76,10 @@ class Faction:
             or self.techs[action]['gold_cost'] > self.gold
             or not self._all_require_satisfied(self.techs[action]['require'])
         ):
-            print(
-                f'{self.side} illegal action {action}: tech cannot been built'
-            )
+            # print(
+            #     f'{self.side} illegal action {action}: tech cannot been built'
+            # )
+            pass
         else:
             self.techs[action]['building'] = True
             self.gold -= self.techs[action]['gold_cost']
@@ -90,9 +91,10 @@ class Faction:
             or not self._all_require_satisfied(self.units[action]['require'])
             or self.population >= MAX_POPULATION
         ):
-            print(
-                f'{self.side} illegal action {action}: unit cannot been built'
-            )
+            # print(
+            #     f'{self.side} illegal action {action}: unit cannot been built'
+            # )
+            pass
         else:
             self.population += 1
             self.gold -= self.units[action]['gold_cost']
@@ -198,15 +200,15 @@ class Faction:
 
 
 class Game:
-    def __init__(self, actions=None):
+    def __init__(self, simple=False):
         self.screen = None
         self.white = Faction('white')
         self.black = Faction('black')
 
-        if actions is None:
-            self.actions = FULL_ACTIONS
+        if simple:
+            self.actions = SIMPLE_ACTIONS
         else:
-            self.actions = actions
+            self.actions = FULL_ACTIONS
 
     @property
     def available_actions(self):
@@ -515,7 +517,7 @@ class Game:
                 unit.static = True
 
     def _global_health(self):
-        done = False
+        end_status = None
 
         for unit in self.white.army:
             fr, un = self.black._frontier()
@@ -529,10 +531,9 @@ class Game:
                         self.black.army.remove(un)
                         self.black.population -= 1
                     else:
-                        # TODO process done event
-                        done = True
+                        end_status = 'white'
 
-                        return done
+                        return end_status
 
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
             elif target_distance <= unit.attack_range and unit.cool_down > 0:
@@ -551,21 +552,20 @@ class Game:
                         self.white.army.remove(un)
                         self.white.population -= 1
                     else:
-                        # TODO process done event
-                        done = True
+                        end_status = 'black'
 
-                        return done
+                        return end_status
 
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
             elif target_distance <= unit.attack_range and unit.cool_down > 0:
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
                 # TODO hit and run
 
-        return done
+        return end_status
 
     def step(self, white_action, black_action):
         # gym support
-        reward = 0  # 0 for most cases because not scored at the moment
+        reward = (0, 0)  # 0 for most cases because not scored at the moment
         done = False
 
         # global action
@@ -575,7 +575,15 @@ class Game:
         self._global_movement()
 
         # global health
-        done = self._global_health()
+        end_status = self._global_health()
+
+        if end_status is not None:
+            done = True
+
+            if end_status == 'white':
+                reward = (1, -1)
+            elif end_status == 'black':
+                reward = (-1, 1)
 
         # prepare state
         state = self._observation()

@@ -63,37 +63,36 @@ def numpy_agent(state, actions):
 
 if __name__ == "__main__":
     # env setup
-    game = Game(SIMPLE_ACTIONS)
+    game = Game(simple=True)
     state = game.reset()
     white_action, black_action = 'null', 'null'
 
     # naive numpy agent
     H = 200  # number of hidden layer neurons
-    D = 112  # input dimensionality (# of grid)
+    D = 112  # input dimensionality (# of features)
+    episode_number = 0
     render = False
     model = {}
     model['W1'] = np.random.randn(H, D) / np.sqrt(D)  # xavier
     model['W2'] = np.random.randn(len(game.available_actions), H) / np.sqrt(H)
 
-    for c in count():
+    while True:  # for c in count():
         if render:
             game.render(white_action=white_action, black_action=black_action)
 
-        white_action = numpy_agent(state['white'], game.available_actions)
+        # white_action = numpy_agent(state['white'], game.available_actions)
+        white_action = random_agent(game.available_actions)
         black_action = random_agent(game.available_actions)
 
-        print(c, white_action, black_action)
-
-        # handle human close action
-
-        if white_action == 'close' or black_action == 'close':
-            game.close()
+        # print(c, white_action, black_action)
 
         state, reward, done, info = game.step(white_action, black_action)
 
         if done:
-            print(f'Reward: {reward}')
+            # an episode finished
+            episode_number += 1
+            state = game.reset()
 
-            break
-
-    game.close()
+        if reward[0] != 0:
+            suffix = '!!!' if reward[0] == 1 else ''
+            print(f'Ep: {episode_number} reward: {reward}{suffix}')
