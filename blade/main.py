@@ -324,11 +324,8 @@ class Game:
         )
 
         # format
-        try:
-            state['white'] = np.array(state['white']).astype(np.float32)
-            state['black'] = np.array(state['black']).astype(np.float32)
-        except:
-            import pdb; pdb.set_trace()  # XXX BREAKPOINT
+        state['white'] = np.array(state['white']).astype(np.float32)
+        state['black'] = np.array(state['black']).astype(np.float32)
 
         return state
 
@@ -363,6 +360,7 @@ class Game:
 
         # render state text
         # (optional) render action
+
         if white_action is not None and black_action is not None:
             self.white.render_state['action'] = white_action
             self.black.render_state['action'] = black_action
@@ -591,6 +589,9 @@ class Game:
         sys.exit()
 
 
+###################################################
+# general agents
+###################################################
 def human_agent():
     action = 'null'
 
@@ -624,8 +625,13 @@ def random_agent(actions):
     return random.choice(actions)
 
 
+###################################################
+# PG related
+###################################################
 def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
+    """ sigmoid 'squash' to interval [0, 1] """
+
+    return 1.0 / (1.0 + np.exp(-x))
 
 
 def numpy_agent(state, actions):
