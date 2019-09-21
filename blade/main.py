@@ -5,7 +5,6 @@ import numpy as np
 import pygame
 
 from game import Game
-from utils import SIMPLE_ACTIONS
 
 
 ###################################################
