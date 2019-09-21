@@ -11,7 +11,7 @@ WINDMILL_GOLD_SPEED = 2.0
 LANE_LENGTH = 10.0
 MAX_POPULATION = 7
 
-ACTIONS = [
+FULL_ACTIONS = [
     'null',
     'close',
     'barrack',
@@ -24,6 +24,18 @@ ACTIONS = [
     'repair',
     'stop_repair',
 ]
+
+SIMPLE_ACTIONS = [
+    'null',
+    'close',
+    'barrack',
+    'blacksmith',
+    'footman',
+    'rifleman',
+    'forward',
+]
+
+ACTIONS = SIMPLE_ACTIONS
 
 SIMPLE_TECHS = {
     'barrack': {

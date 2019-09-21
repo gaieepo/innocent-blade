@@ -203,10 +203,6 @@ class Game:
         self.black = Faction('black')
 
     @property
-    def all_actions(self):
-        return tuple(ACTIONS)
-
-    @property
     def available_actions(self):
         return tuple(action for action in ACTIONS if action != 'close')
 
