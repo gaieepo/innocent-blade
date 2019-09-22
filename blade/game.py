@@ -5,9 +5,10 @@ import numpy as np
 import pygame
 
 from utils import (FPS, FULL_ACTIONS, GOLD_SPEED, HEIGHT, INITIAL_GOLD,
-                   LANE_LENGTH, MAX_POPULATION, SIMPLE_ACTIONS, SIMPLE_TECHS,
-                   SIMPLE_UNITS, UNIT_TEMPLATE, WIDTH, WINDMILL_GOLD_SPEED,
-                   Base, Footman, Rifleman)
+                   LANE_LENGTH, MAX_POPULATION, PREPRO_DAMAGE, PREPRO_GOLD,
+                   PREPRO_TIME, SIMPLE_ACTIONS, SIMPLE_TECHS, SIMPLE_UNITS,
+                   UNIT_TEMPLATE, WIDTH, WINDMILL_GOLD_SPEED, Base, Footman,
+                   Rifleman)
 
 
 class Faction:
@@ -200,7 +201,8 @@ class Faction:
 
 
 class Game:
-    def __init__(self, simple=False):
+    def __init__(self, simple=False, prepro=False):
+        self.prepro = prepro
         self.screen = None
         self.white = Faction('white')
         self.black = Faction('black')
@@ -215,9 +217,6 @@ class Game:
         return tuple(action for action in self.actions if action != 'close')
 
     def _observation(self):
-        # TODO faction is not returning inner state
-        # need to process aggregated state externally
-        # items need to return as state:
         state = {'white': [], 'black': []}
 
         # 0. some globals
@@ -319,13 +318,101 @@ class Game:
 
         return state
 
+    def _prepro_observation(self):
+        state = {'white': [], 'black': []}
+
+        # 1. current gold (gold speed determined by tech)
+        state['white'].append(max(self.white.gold / PREPRO_GOLD, 1.0))
+        state['black'].append(max(self.black.gold / PREPRO_GOLD, 1.0))
+
+        # 2. techs
+
+        for k, v in self.white.techs.items():
+            state['white'].extend(
+                [
+                    v['time_cost'] / PREPRO_TIME,
+                    v['count_down'] / PREPRO_TIME,
+                    v['gold_cost'] / PREPRO_GOLD,
+                ]
+            )
+
+        for k, v in self.black.techs.items():
+            state['black'].extend(
+                [
+                    v['time_cost'] / PREPRO_TIME,
+                    v['count_down'] / PREPRO_TIME,
+                    v['gold_cost'] / PREPRO_GOLD,
+                ]
+            )
+
+        # 3. army (population, attack, health determined by tech)
+
+        for i in range(MAX_POPULATION):
+            if i < len(self.white.army):
+                state['white'].extend(
+                    [
+                        self.white.army[i].gold_cost / PREPRO_GOLD,
+                        self.white.army[i].distance / LANE_LENGTH,
+                        (self.white.army[i].direction + 1.0) / 2,
+                        self.white.army[i].cool_down
+                        / self.white.army[i].interval,
+                        self.white.army[i].health
+                        / self.white.army[i].max_health,
+                        self.white.army[i].damage[0] / PREPRO_DAMAGE,
+                        self.white.army[i].damage[1] / PREPRO_DAMAGE,
+                    ]
+                )
+            else:
+                state['white'].extend([0] * 13)
+
+            if i < len(self.black.army):
+                state['black'].extend(
+                    [
+                        self.black.army[i].gold_cost / PREPRO_GOLD,
+                        self.black.army[i].distance / LANE_LENGTH,
+                        (self.black.army[i].direction + 1.0) / 2,
+                        self.black.army[i].cool_down
+                        / self.black.army[i].interval,
+                        self.black.army[i].health
+                        / self.black.army[i].max_health,
+                        self.black.army[i].damage[0] / PREPRO_DAMAGE,
+                        self.black.army[i].damage[1] / PREPRO_DAMAGE,
+                    ]
+                )
+            else:
+                state['black'].extend([0] * 13)
+
+        # 4. base (health determined by tech)
+        state['white'].extend(
+            [
+                self.white.base.repairing,
+                self.white.base.health / self.white.base.max_health,
+            ]
+        )
+        state['black'].extend(
+            [
+                self.black.base.repairing,
+                self.black.base.health / self.black.base.max_health,
+            ]
+        )
+
+        # format
+        state['white'] = np.array(state['white']).astype(np.float).ravel()
+        state['black'] = np.array(state['black']).astype(np.float).ravel()
+
+        return state
+
     def reset(self):
         # reset two factions
         self.white.reset()
         self.black.reset()
 
         # prepare state
-        state = self._observation()
+
+        if self.prepro:
+            state = self._prepro_observation()
+        else:
+            state = self._observation()
 
         return state
 
@@ -538,9 +625,7 @@ class Game:
                         return end_status
 
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
-            elif (
-                target_distance <= unit.attack_range and unit.cool_down > 0
-            ):
+            elif target_distance <= unit.attack_range and unit.cool_down > 0:
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
                 # TODO hit and run
 
@@ -562,9 +647,7 @@ class Game:
                         return end_status
 
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
-            elif (
-                target_distance <= unit.attack_range and unit.cool_down > 0
-            ):
+            elif target_distance <= unit.attack_range and unit.cool_down > 0:
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
                 # TODO hit and run
 
@@ -603,7 +686,11 @@ class Game:
                 reward = (-1, 1)
 
         # prepare state
-        state = self._observation()
+
+        if self.prepro:
+            state = self._prepro_observation()
+        else:
+            state = self._observation()
 
         return state, reward, done, {}
 

@@ -64,13 +64,13 @@ if __name__ == "__main__":
     random.seed(42)
 
     # env setup
-    game = Game(simple=True)
+    game = Game(simple=True, prepro=True)
     state = game.reset()
     white_action, black_action = 'null', 'null'
 
     # naive numpy agent
     H = 200  # number of hidden layer neurons
-    D = 112  # input dimensionality (# of features)
+    D = 103  # input dimensionality (# of features)
     episode_number = 0
     render = False
     model = {}
@@ -83,8 +83,7 @@ if __name__ == "__main__":
         if render:
             game.render(white_action=white_action, black_action=black_action)
 
-        # white_action = numpy_agent(state['white'], game.available_actions)
-        white_action = random_agent(game.available_actions)
+        white_action = numpy_agent(state['white'], game.available_actions)
         black_action = random_agent(game.available_actions)
 
         # print(c, white_action, black_action)
