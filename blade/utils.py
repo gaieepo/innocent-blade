@@ -9,13 +9,13 @@ PREPRO_DAMAGE = 50.0
 
 HEIGHT = 720
 WIDTH = 960
-FPS = 50
+FPS = 360
 
 INITIAL_GOLD = 90.0
 GOLD_SPEED = 1.0
 WINDMILL_GOLD_SPEED = 2.0
 
-MAX_GLOBAL_TIME = 100000
+MAX_GLOBAL_TIME = 10000
 LANE_LENGTH = 10.0
 MAX_POPULATION = 7
 
@@ -38,6 +38,7 @@ SIMPLE_ACTIONS = [
     'close',
     'barrack',
     'blacksmith',
+    'windmill',
     'footman',
     'rifleman',
     'forward',

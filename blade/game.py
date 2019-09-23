@@ -5,7 +5,7 @@ import numpy as np
 import pygame
 
 from utils import (FPS, FULL_ACTIONS, GOLD_SPEED, HEIGHT, INITIAL_GOLD,
-                   LANE_LENGTH, MAX_GLOBAL_TIME, MAX_POPULATION, PREPRO_DAMAGE,
+                   LANE_LENGTH, MAX_POPULATION, PREPRO_DAMAGE,
                    PREPRO_GOLD, PREPRO_TIME, SIMPLE_ACTIONS, SIMPLE_TECHS,
                    SIMPLE_UNITS, UNIT_TEMPLATE, WIDTH, WINDMILL_GOLD_SPEED,
                    Base, Footman, Rifleman)
@@ -201,8 +201,7 @@ class Faction:
 
 
 class Game:
-    def __init__(self, simple=False, prepro=False):
-        self.prepro = prepro
+    def __init__(self, simple=False):
         self.screen = None
         self.white = Faction('white')
         self.black = Faction('black')
@@ -217,108 +216,6 @@ class Game:
         return tuple(action for action in self.actions if action != 'close')
 
     def _observation(self):
-        state = {'white': [], 'black': []}
-
-        # 0. some globals
-        state['white'].append(LANE_LENGTH)
-        state['black'].append(LANE_LENGTH)
-
-        # 1. current gold (gold speed determined by tech)
-        state['white'].extend([self.white.gold, self.white.gold_speed])
-        state['black'].extend([self.black.gold, self.black.gold_speed])
-
-        # 2. techs
-
-        for k, v in self.white.techs.items():
-            state['white'].extend(
-                [
-                    v['time_cost'],
-                    v['count_down'],
-                    v['gold_cost'],
-                    v['built'],
-                    v['building'],
-                ]
-            )
-
-        for k, v in self.black.techs.items():
-            state['black'].extend(
-                [
-                    v['time_cost'],
-                    v['count_down'],
-                    v['gold_cost'],
-                    v['built'],
-                    v['building'],
-                ]
-            )
-
-        # 3. army (population, attack, health determined by tech)
-
-        for i in range(MAX_POPULATION):
-            if i < len(self.white.army):
-                state['white'].extend(
-                    [
-                        self.white.army[i].gold_cost,
-                        self.white.army[i].time_cost,
-                        self.white.army[i].count_down,
-                        self.white.army[i].building,
-                        self.white.army[i].distance,
-                        self.white.army[i].speed,
-                        self.white.army[i].direction,
-                        self.white.army[i].cool_down,
-                        self.white.army[i].max_health,
-                        self.white.army[i].health,
-                        self.white.army[i].attack_range,
-                        *self.white.army[i].damage,
-                        self.white.army[i].interval,
-                    ]
-                )
-            else:
-                state['white'].extend([0] * 13)
-
-            if i < len(self.black.army):
-                state['black'].extend(
-                    [
-                        self.black.army[i].gold_cost,
-                        self.black.army[i].time_cost,
-                        self.black.army[i].count_down,
-                        self.black.army[i].building,
-                        self.black.army[i].distance,
-                        self.black.army[i].speed,
-                        self.black.army[i].direction,
-                        self.black.army[i].cool_down,
-                        self.black.army[i].max_health,
-                        self.black.army[i].health,
-                        self.black.army[i].attack_range,
-                        *self.black.army[i].damage,
-                        self.black.army[i].interval,
-                    ]
-                )
-            else:
-                state['black'].extend([0] * 13)
-
-        # 4. base (health determined by tech)
-        state['white'].extend(
-            [
-                self.white.base.repairing,
-                self.white.base.max_health,
-                self.white.base.health,
-            ]
-        )
-        state['black'].extend(
-            [
-                self.black.base.repairing,
-                self.black.base.max_health,
-                self.black.base.health,
-            ]
-        )
-
-        # format
-        state['white'] = np.array(state['white']).astype(np.float32)
-        state['black'] = np.array(state['black']).astype(np.float32)
-
-        return state
-
-    def _prepro_observation(self):
         state = {'white': [], 'black': []}
 
         # 1. current gold (gold speed determined by tech)
@@ -346,10 +243,12 @@ class Game:
             )
 
         # 3. army (population, attack, health determined by tech)
+        state_white_army = []
+        state_black_army = []
 
         for i in range(MAX_POPULATION):
             if i < len(self.white.army):
-                state['white'].extend(
+                state_white_army.extend(
                     [
                         self.white.army[i].gold_cost / PREPRO_GOLD,
                         self.white.army[i].distance / LANE_LENGTH,
@@ -363,10 +262,10 @@ class Game:
                     ]
                 )
             else:
-                state['white'].extend([0] * 7)
+                state_white_army.extend([0] * 7)
 
             if i < len(self.black.army):
-                state['black'].extend(
+                state_black_army.extend(
                     [
                         self.black.army[i].gold_cost / PREPRO_GOLD,
                         self.black.army[i].distance / LANE_LENGTH,
@@ -380,7 +279,12 @@ class Game:
                     ]
                 )
             else:
-                state['black'].extend([0] * 7)
+                state_black_army.extend([0] * 7)
+
+        state['white'].extend(state_white_army)
+        state['white'].extend(state_black_army)
+        state['black'].extend(state_black_army)
+        state['black'].extend(state_white_army)
 
         # 4. base (health determined by tech)
         state['white'].extend(
@@ -408,11 +312,7 @@ class Game:
         self.black.reset()
 
         # prepare state
-
-        if self.prepro:
-            state = self._prepro_observation()
-        else:
-            state = self._observation()
+        state = self._observation()
 
         return state
 
@@ -686,11 +586,7 @@ class Game:
                 reward = (-1, 1)
 
         # prepare state
-
-        if self.prepro:
-            state = self._prepro_observation()
-        else:
-            state = self._observation()
+        state = self._observation()
 
         return state, reward, done, info
 

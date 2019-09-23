@@ -10,7 +10,7 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 from game import Game
-from utils import WHITE
+from utils import MAX_GLOBAL_TIME, WHITE
 
 
 ###################################################
@@ -55,8 +55,8 @@ def random_agent(actions):
 class Policy(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(Policy, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 32)
-        self.fc2 = nn.Linear(32, output_dim)
+        self.fc1 = nn.Linear(input_dim * 2, 128)
+        self.fc2 = nn.Linear(128, output_dim)
 
         self.saved_log_probs = []
         self.rewards = []
@@ -82,11 +82,13 @@ def finish_episode():
     R = 0
     policy_loss = []
     returns = []
+
     for r in policy.rewards[::-1]:
-        R = r + gamma * R
+        R = r + gamma * R  # discount reward
         returns.insert(0, R)
     returns = torch.tensor(returns)
     returns = (returns - returns.mean()) / (returns.std() + eps)
+
     for log_prob, R in zip(policy.saved_log_probs, returns):
         policy_loss.append(-log_prob * R)
     optimizer.zero_grad()
@@ -98,42 +100,68 @@ def finish_episode():
 
 
 if __name__ == "__main__":
+    # env settings
     seed = 42
     random.seed(seed)
     torch.manual_seed(seed)
 
     # env setup
-    game = Game(simple=False, prepro=True)
+    game = Game(simple=False)
     state = game.reset()
+    prev_state = {'white': None, 'black': None}
 
-    # naive torch agent
+    # naive torch agent settings
     render = False
-    white_wins, black_wins = 0, 0
+    resume = False
 
+    # policy model
     policy = Policy(
         input_dim=state['white'].shape[0],
         output_dim=len(game.available_actions),
     )
+
+    if resume:
+        policy.load_state_dict(torch.load('latest.pth'))
+
+    policy.train()
+
+    # hyper-parameters
     optimizer = optim.Adam(policy.parameters(), lr=3e-4)
     eps = np.finfo(np.float32).eps.item()
     gamma = 0.99
 
-    running_reward = 10
+    # main loop
+    running_reward = 0
+    white_wins, black_wins = 0, 0
 
     for i_episode in count(1):
         state, ep_reward = game.reset(), 0
         white_action, black_action = 'null', 'null'
 
-        for t in range(1, 10000):  # Don't infinite loop while learning
+        for t in range(1, MAX_GLOBAL_TIME):  # finite loop while learning
             if render:
                 game.render(
                     white_action=white_action, black_action=black_action
                 )
 
-            # TODO preprocess state curr and prev
+            input_state = {
+                'white': np.concatenate([state['white'], prev_state['white']])
+                if prev_state['white'] is not None
+                else np.concatenate(
+                    [state['white'], np.zeros_like(state['white'])]
+                ),
+                'black': np.concatenate([state['black'], prev_state['black']])
+                if prev_state['black'] is not None
+                else np.concatenate(
+                    [state['black'], np.zeros_like(state['black'])]
+                ),
+            }
+            prev_state = state
 
-            white_action = torch_agent(state['white'], game.available_actions)
-            black_action = random_agent(game.available_actions)
+            white_action = torch_agent(
+                input_state['white'], game.available_actions
+            )
+            black_action = 'null'  # random_agent(game.available_actions)
 
             if white_action == 'close' or black_action == 'close':
                 game.close()
@@ -141,20 +169,30 @@ if __name__ == "__main__":
             state, reward, done, info = game.step(white_action, black_action)
 
             # record reward
-            policy.rewards.append(reward)
+            policy.rewards.append(reward[WHITE])
             ep_reward += reward[WHITE]
 
             if done:
                 break
 
-        # Reward is not zero
+        # when exceed time white loses
+
+        if not done:
+            policy.rewards.append(-1)
+            ep_reward += -1
+
         running_reward = 0.05 * ep_reward + (1 - 0.05) * running_reward
-        finish_episode()
+        # finish_episode()
 
         if reward[0] == 1:
             white_wins += 1
         else:
             black_wins += 1
+
+        if i_episode % 50 == 0:
+            # torch.save(policy.state_dict(), f'save_{i_episode}.pth')
+            torch.save(policy.state_dict(), 'latest.pth')
+
         print(
-            f'Ep: {i_episode} reward: {reward} white: {white_wins} black: {black_wins} white rate: {100. * white_wins / (white_wins + black_wins)}%'
+            f'Ep: {i_episode:3d} ends at time {t:5d} reward: {ep_reward:.2f} avg reward: {running_reward:.2f} white: {white_wins} black: {black_wins} white rate: {100. * white_wins / (white_wins + black_wins):.2f}%'
         )

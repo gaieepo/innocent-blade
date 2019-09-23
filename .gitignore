@@ -106,3 +106,4 @@ venv.bak/
 *.swf
 *.xlsx
 *.swp
+*.pth
