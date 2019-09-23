@@ -97,6 +97,7 @@ def finish_episode():
     optimizer.step()
     del policy.rewards[:]
     del policy.saved_log_probs[:]
+    return policy_loss.item()
 
 
 if __name__ == "__main__":
@@ -175,14 +176,13 @@ if __name__ == "__main__":
             if done:
                 break
 
-        # when exceed time white loses
-
         if not done:
+            # when exceed time white loses
             policy.rewards.append(-1)
             ep_reward += -1
 
         running_reward = 0.05 * ep_reward + (1 - 0.05) * running_reward
-        # finish_episode()
+        policy_loss = finish_episode()
 
         if reward[0] == 1:
             white_wins += 1
@@ -194,5 +194,5 @@ if __name__ == "__main__":
             torch.save(policy.state_dict(), 'latest.pth')
 
         print(
-            f'Ep: {i_episode:3d} ends at time {t:5d} reward: {ep_reward:.2f} avg reward: {running_reward:.2f} white: {white_wins} black: {black_wins} white rate: {100. * white_wins / (white_wins + black_wins):.2f}%'
+            f'Ep: {i_episode:3d} ends at time {t:5d} loss: {policy_loss:.2f} reward: {ep_reward:.2f} avg reward: {running_reward:.2f} white: {white_wins} black: {black_wins} white rate: {100. * white_wins / (white_wins + black_wins):.2f}%'
         )
