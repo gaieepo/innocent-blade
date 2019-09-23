@@ -3,6 +3,11 @@ from itertools import count
 
 import numpy as np
 import pygame
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.distributions import Categorical
 
 from game import Game
 
@@ -46,47 +51,58 @@ def random_agent(actions):
 ###################################################
 # PG related
 ###################################################
-def sigmoid(x):
-    """ sigmoid 'squash' to interval [0, 1] """
+class Policy(nn.Module):
+    def __init__(self, output_dim):
+        super(Policy, self).__init__()
+        self.fc1 = nn.Linear(103, 128)
+        self.fc2 = nn.Linear(128, output_dim)
 
-    return 1.0 / (1.0 + np.exp(-x))
+        self.saved_log_probs = []
+        self.rewards = []
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        action_scores = self.fc2(x)
+
+        return torch.softmax(action_scores, dim=1)
 
 
-def numpy_agent(state, actions):
-    h = np.dot(model['W1'], state)
-    h[h < 0] = 0
-    logp = np.dot(model['W2'], h)
+def torch_agent(state):
+    probs = policy(state)
+    m = Categorical(probs)
+    action = m.sample()
+    policy.saved_log_probs.append(m.log_prob(action))
+    import pdb; pdb.set_trace()  # XXX BREAKPOINT
 
-    return actions[np.argmax(sigmoid(logp))]
+    return action.item()
 
 
 if __name__ == "__main__":
     random.seed(42)
+    torch.manual_seed(42)
 
     # env setup
     game = Game(simple=True, prepro=True)
     state = game.reset()
     white_action, black_action = 'null', 'null'
 
-    # naive numpy agent
-    H = 200  # number of hidden layer neurons
-    D = 103  # input dimensionality (# of features)
+    # naive torch agent
     episode_number = 0
     render = False
-    model = {}
-    model['W1'] = np.random.randn(H, D) / np.sqrt(D)  # xavier
-    model['W2'] = np.random.randn(len(game.available_actions), H) / np.sqrt(H)
-
     white_wins, black_wins = 0, 0
+
+    policy = Policy(output_dim=len(game.available_actions))
+    optimizer = optim.Adam(policy.parameters(), lr=3e-4)
+    eps = np.finfo(np.float32).eps.item()
 
     while True:  # for c in count():
         if render:
             game.render(white_action=white_action, black_action=black_action)
 
-        white_action = numpy_agent(state['white'], game.available_actions)
-        black_action = random_agent(game.available_actions)
+        # TODO preprocess state curr and prev
 
-        # print(c, white_action, black_action)
+        white_action = torch_agent(state['white'])
+        black_action = random_agent(game.available_actions)
 
         if white_action == 'close' or black_action == 'close':
             break

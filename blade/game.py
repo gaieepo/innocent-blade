@@ -8,7 +8,7 @@ from utils import (FPS, FULL_ACTIONS, GOLD_SPEED, HEIGHT, INITIAL_GOLD,
                    LANE_LENGTH, MAX_POPULATION, PREPRO_DAMAGE, PREPRO_GOLD,
                    PREPRO_TIME, SIMPLE_ACTIONS, SIMPLE_TECHS, SIMPLE_UNITS,
                    UNIT_TEMPLATE, WIDTH, WINDMILL_GOLD_SPEED, Base, Footman,
-                   Rifleman)
+                   Rifleman, MAX_GLOBAL_TIME)
 
 
 class Faction:
@@ -202,6 +202,7 @@ class Faction:
 
 class Game:
     def __init__(self, simple=False, prepro=False):
+        self.global_time = 0
         self.prepro = prepro
         self.screen = None
         self.white = Faction('white')
@@ -403,6 +404,9 @@ class Game:
         return state
 
     def reset(self):
+        # global state
+        self.global_time = 0
+
         # reset two factions
         self.white.reset()
         self.black.reset()
@@ -664,9 +668,10 @@ class Game:
         return end_status
 
     def step(self, white_action, black_action):
-        # gym support
+        self.global_time += 1
         reward = (0, 0)  # 0 for most cases because not scored at the moment
         done = False
+        info = {}
 
         # global action
         self._global_action(white_action, black_action)
@@ -692,7 +697,12 @@ class Game:
         else:
             state = self._observation()
 
-        return state, reward, done, {}
+        if self.global_time > MAX_GLOBAL_TIME:
+            # assume default train white
+            done = True
+            reward = (-1, 1)
+
+        return state, reward, done, info
 
     def close(self, close_all=True):
         if self.screen is not None:
