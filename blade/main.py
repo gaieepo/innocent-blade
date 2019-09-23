@@ -161,7 +161,7 @@ if __name__ == "__main__":
             white_action = torch_agent(
                 input_state['white'], game.available_actions
             )
-            black_action = 'null'  # random_agent(game.available_actions)
+            black_action = random_agent(game.available_actions)
 
             if white_action == 'close' or black_action == 'close':
                 game.close()
