@@ -10,6 +10,7 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 from game import Game
+from utils import WHITE
 
 
 ###################################################
@@ -52,10 +53,10 @@ def random_agent(actions):
 # PG related
 ###################################################
 class Policy(nn.Module):
-    def __init__(self, output_dim):
+    def __init__(self, input_dim, output_dim):
         super(Policy, self).__init__()
-        self.fc1 = nn.Linear(103, 128)
-        self.fc2 = nn.Linear(128, output_dim)
+        self.fc1 = nn.Linear(input_dim, 32)
+        self.fc2 = nn.Linear(32, output_dim)
 
         self.saved_log_probs = []
         self.rewards = []
@@ -67,14 +68,18 @@ class Policy(nn.Module):
         return torch.softmax(action_scores, dim=1)
 
 
-def torch_agent(state):
+def torch_agent(state, actions):
+    state = torch.from_numpy(state).float().unsqueeze(0)
     probs = policy(state)
     m = Categorical(probs)
     action = m.sample()
     policy.saved_log_probs.append(m.log_prob(action))
-    import pdb; pdb.set_trace()  # XXX BREAKPOINT
 
-    return action.item()
+    return actions[action.item()]
+
+
+def finish_episode():
+    pass
 
 
 if __name__ == "__main__":
@@ -82,48 +87,57 @@ if __name__ == "__main__":
     torch.manual_seed(42)
 
     # env setup
-    game = Game(simple=True, prepro=True)
+    game = Game(simple=False, prepro=True)
     state = game.reset()
-    white_action, black_action = 'null', 'null'
 
     # naive torch agent
-    episode_number = 0
     render = False
     white_wins, black_wins = 0, 0
 
-    policy = Policy(output_dim=len(game.available_actions))
+    policy = Policy(
+        input_dim=state['white'].shape[0],
+        output_dim=len(game.available_actions),
+    )
     optimizer = optim.Adam(policy.parameters(), lr=3e-4)
     eps = np.finfo(np.float32).eps.item()
 
-    while True:  # for c in count():
-        if render:
-            game.render(white_action=white_action, black_action=black_action)
+    running_reward = 10
 
-        # TODO preprocess state curr and prev
+    for i_episode in count(1):
+        state, ep_reward = game.reset(), 0
+        white_action, black_action = 'null', 'null'
 
-        white_action = torch_agent(state['white'])
-        black_action = random_agent(game.available_actions)
+        for t in range(1, 10000):  # Don't infinite loop while learning
+            if render:
+                game.render(
+                    white_action=white_action, black_action=black_action
+                )
 
-        if white_action == 'close' or black_action == 'close':
-            break
+            # TODO preprocess state curr and prev
 
-        state, reward, done, info = game.step(white_action, black_action)
+            white_action = torch_agent(state['white'], game.available_actions)
+            black_action = random_agent(game.available_actions)
 
-        if done:
-            # an episode finished
-            episode_number += 1
-            state = game.reset()
+            if white_action == 'close' or black_action == 'close':
+                game.close()
 
-        if reward[0] != 0:
-            # suffix = '!!!' if reward[0] == 1 else ''
-            suffix = ''
+            state, reward, done, info = game.step(white_action, black_action)
 
-            if reward[0] == 1:
-                white_wins += 1
-            else:
-                black_wins += 1
-            print(
-                f'Ep: {episode_number} reward: {reward}{suffix} white: {white_wins} black: {black_wins} white rate: {100. * white_wins / (white_wins + black_wins)}%'
-            )
+            # record reward
+            policy.rewards.append(reward)
+            ep_reward += reward[WHITE]
 
-    game.close()
+            if done:
+                break
+
+        # Reward is not zero
+        running_reward = 0.05 * ep_reward + (1 - 0.05) * running_reward
+        finish_episode()
+
+        if reward[0] == 1:
+            white_wins += 1
+        else:
+            black_wins += 1
+        print(
+            f'Ep: {i_episode} reward: {reward} white: {white_wins} black: {black_wins} white rate: {100. * white_wins / (white_wins + black_wins)}%'
+        )

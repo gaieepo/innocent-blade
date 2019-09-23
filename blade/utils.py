@@ -1,5 +1,8 @@
 import random
 
+WHITE = 0
+BLACK = 1
+
 PREPRO_GOLD = 1000.0
 PREPRO_TIME = 100.0
 PREPRO_DAMAGE = 50.0

@@ -5,10 +5,10 @@ import numpy as np
 import pygame
 
 from utils import (FPS, FULL_ACTIONS, GOLD_SPEED, HEIGHT, INITIAL_GOLD,
-                   LANE_LENGTH, MAX_POPULATION, PREPRO_DAMAGE, PREPRO_GOLD,
-                   PREPRO_TIME, SIMPLE_ACTIONS, SIMPLE_TECHS, SIMPLE_UNITS,
-                   UNIT_TEMPLATE, WIDTH, WINDMILL_GOLD_SPEED, Base, Footman,
-                   Rifleman, MAX_GLOBAL_TIME)
+                   LANE_LENGTH, MAX_GLOBAL_TIME, MAX_POPULATION, PREPRO_DAMAGE,
+                   PREPRO_GOLD, PREPRO_TIME, SIMPLE_ACTIONS, SIMPLE_TECHS,
+                   SIMPLE_UNITS, UNIT_TEMPLATE, WIDTH, WINDMILL_GOLD_SPEED,
+                   Base, Footman, Rifleman)
 
 
 class Faction:
@@ -202,7 +202,6 @@ class Faction:
 
 class Game:
     def __init__(self, simple=False, prepro=False):
-        self.global_time = 0
         self.prepro = prepro
         self.screen = None
         self.white = Faction('white')
@@ -364,7 +363,7 @@ class Game:
                     ]
                 )
             else:
-                state['white'].extend([0] * 13)
+                state['white'].extend([0] * 7)
 
             if i < len(self.black.army):
                 state['black'].extend(
@@ -381,7 +380,7 @@ class Game:
                     ]
                 )
             else:
-                state['black'].extend([0] * 13)
+                state['black'].extend([0] * 7)
 
         # 4. base (health determined by tech)
         state['white'].extend(
@@ -404,9 +403,6 @@ class Game:
         return state
 
     def reset(self):
-        # global state
-        self.global_time = 0
-
         # reset two factions
         self.white.reset()
         self.black.reset()
@@ -668,7 +664,6 @@ class Game:
         return end_status
 
     def step(self, white_action, black_action):
-        self.global_time += 1
         reward = (0, 0)  # 0 for most cases because not scored at the moment
         done = False
         info = {}
@@ -696,11 +691,6 @@ class Game:
             state = self._prepro_observation()
         else:
             state = self._observation()
-
-        if self.global_time > MAX_GLOBAL_TIME:
-            # assume default train white
-            done = True
-            reward = (-1, 1)
 
         return state, reward, done, info
 
