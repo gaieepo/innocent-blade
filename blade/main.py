@@ -79,12 +79,28 @@ def torch_agent(state, actions):
 
 
 def finish_episode():
-    pass
+    R = 0
+    policy_loss = []
+    returns = []
+    for r in policy.rewards[::-1]:
+        R = r + gamma * R
+        returns.insert(0, R)
+    returns = torch.tensor(returns)
+    returns = (returns - returns.mean()) / (returns.std() + eps)
+    for log_prob, R in zip(policy.saved_log_probs, returns):
+        policy_loss.append(-log_prob * R)
+    optimizer.zero_grad()
+    policy_loss = torch.cat(policy_loss).sum()
+    policy_loss.backward()
+    optimizer.step()
+    del policy.rewards[:]
+    del policy.saved_log_probs[:]
 
 
 if __name__ == "__main__":
-    random.seed(42)
-    torch.manual_seed(42)
+    seed = 42
+    random.seed(seed)
+    torch.manual_seed(seed)
 
     # env setup
     game = Game(simple=False, prepro=True)
@@ -100,6 +116,7 @@ if __name__ == "__main__":
     )
     optimizer = optim.Adam(policy.parameters(), lr=3e-4)
     eps = np.finfo(np.float32).eps.item()
+    gamma = 0.99
 
     running_reward = 10
 
