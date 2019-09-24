@@ -11,7 +11,7 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 from game import Game
-from utils import MAX_GLOBAL_TIME, WHITE
+from utils import MAX_GLOBAL_TIME, WHITE, SEED
 
 
 ###################################################
@@ -112,9 +112,8 @@ def weight_init(m):
 
 if __name__ == "__main__":
     # env settings
-    seed = 42
-    random.seed(seed)
-    torch.manual_seed(seed)
+    random.seed(SEED)
+    torch.manual_seed(SEED)
 
     # env setup
     game = Game(simple=False)
@@ -148,7 +147,7 @@ if __name__ == "__main__":
 
     if os.path.exists('best.pth'):
         best_policy.load_state_dict(torch.load('best.pth'))
-    elif os.path.exists('best.pth'):
+    elif os.path.exists('latest.pth'):
         best_policy.load_state_dict(torch.load('latest.pth'))
     else:
         weight_init(best_policy)
@@ -174,7 +173,7 @@ if __name__ == "__main__":
             updated = False
             best_policy.load_state_dict(torch.load('best.pth'))
 
-        for t in range(1, MAX_GLOBAL_TIME):  # finite loop while learning
+        for t in range(1, int(MAX_GLOBAL_TIME)):  # finite loop while learning
             if render:
                 game.render(
                     white_action=white_action, black_action=black_action
@@ -217,10 +216,10 @@ if __name__ == "__main__":
             if done:
                 break
 
-        if not done:
-            # when exceed time white loses
-            latest_policy.rewards.append(-1)
-            ep_reward += -1
+        # if not done:
+        #     # when exceed time white loses
+        #     latest_policy.rewards.append(-1)
+        #     ep_reward += -1
 
         running_reward = 0.05 * ep_reward + (1 - 0.05) * running_reward
         returned_policy_loss = finish_episode()
@@ -240,5 +239,5 @@ if __name__ == "__main__":
             print('Updated best policy!!!')
 
         print(
-            f'Ep: {i_episode:3d} ends at time {t:5d} loss: {returned_policy_loss:.2f} reward: {ep_reward:.2f} avg reward: {running_reward:.2f} white: {white_wins} black: {black_wins} white rate: {100. * white_win_rate:.2f}%'
+            f'Ep: {i_episode:3d} ends at time {t:6d} loss: {returned_policy_loss:.2f} reward: {ep_reward:.2f} avg reward: {running_reward:.2f} white: {white_wins} black: {black_wins} white rate: {100. * white_win_rate:.2f}%'
         )
