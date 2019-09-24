@@ -11,7 +11,7 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 from game import Game
-from utils import MAX_GLOBAL_TIME, WHITE, SEED
+from utils import GAMMA, MAX_GLOBAL_TIME, SEED, WHITE, LR
 
 
 ###################################################
@@ -57,13 +57,16 @@ class Policy(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(Policy, self).__init__()
         self.fc1 = nn.Linear(input_dim * 2, 128)
+        self.dropout = nn.Dropout(p=0.6)
         self.fc2 = nn.Linear(128, output_dim)
 
         self.saved_log_probs = []
         self.rewards = []
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
+        x = self.fc1(x)
+        x = self.dropout(x)
+        x = F.relu(x)
         action_scores = self.fc2(x)
 
         return torch.softmax(action_scores, dim=1)
@@ -85,7 +88,7 @@ def finish_episode():
     returns = []
 
     for r in latest_policy.rewards[::-1]:
-        R = r + gamma * R  # discount reward
+        R = r + GAMMA * R  # discount reward
         returns.insert(0, R)
     returns = torch.tensor(returns)
     returns = (returns - returns.mean()) / (returns.std() + eps)
@@ -156,16 +159,16 @@ if __name__ == "__main__":
     best_policy.eval()
 
     # hyper-parameters
-    optimizer = optim.Adam(latest_policy.parameters(), lr=3e-4)
+    optimizer = optim.Adam(latest_policy.parameters(), lr=LR)
     eps = np.finfo(np.float32).eps.item()
-    gamma = 0.99
 
     # main loop
-    running_reward = 0
+    # running_reward = 0
     white_wins, black_wins = 0, 0
 
     for i_episode in count(1):
-        state, ep_reward = game.reset(), 0
+        # state, ep_reward = game.reset(), 0
+        state = game.reset()
         white_action, black_action = 'null', 'null'
 
         if updated:
@@ -182,11 +185,13 @@ if __name__ == "__main__":
             # preprocess input state
             input_state = {
                 'white': np.concatenate([state['white'], prev_state['white']])
+
                 if prev_state['white'] is not None
                 else np.concatenate(
                     [state['white'], np.zeros_like(state['white'])]
                 ),
                 'black': np.concatenate([state['black'], prev_state['black']])
+
                 if prev_state['black'] is not None
                 else np.concatenate(
                     [state['black'], np.zeros_like(state['black'])]
@@ -211,17 +216,17 @@ if __name__ == "__main__":
 
             # record reward
             latest_policy.rewards.append(reward[WHITE])
-            ep_reward += reward[WHITE]
+            # ep_reward += reward[WHITE]
 
             if done:
                 break
 
-        # if not done:
-        #     # when exceed time white loses
-        #     latest_policy.rewards.append(-1)
-        #     ep_reward += -1
+        if not done:
+            # when exceed time white loses
+            latest_policy.rewards.append(-1)
+            # ep_reward += -1
 
-        running_reward = 0.05 * ep_reward + (1 - 0.05) * running_reward
+        # running_reward = 0.05 * ep_reward + (1 - 0.05) * running_reward
         returned_policy_loss = finish_episode()
 
         if reward[WHITE] == 1:
@@ -239,5 +244,5 @@ if __name__ == "__main__":
             print('Updated best policy!!!')
 
         print(
-            f'Ep: {i_episode:3d} ends at time {t:6d} loss: {returned_policy_loss:.2f} reward: {ep_reward:.2f} avg reward: {running_reward:.2f} white: {white_wins} black: {black_wins} white rate: {100. * white_win_rate:.2f}%'
+            f'Ep: {i_episode:3d} ends at time {t:6d} loss: {returned_policy_loss:.2f} white: {white_wins} black: {black_wins} white rate: {100. * white_win_rate:.2f}%'
         )
