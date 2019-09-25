@@ -1,4 +1,7 @@
 import random
+import uuid
+
+import numpy as np
 
 # env related
 SEED = 42
@@ -7,6 +10,12 @@ MIN_MATCHES = 10
 
 GAMMA = 0.99
 LR = 5e-4
+EPS = np.finfo(np.float32).eps.item()
+
+
+def generate_id():
+    return uuid.uuid4().hex[:8]
+
 
 # prepro
 PREPRO_GOLD = 1000.0
