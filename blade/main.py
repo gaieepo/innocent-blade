@@ -1,9 +1,7 @@
 import os
-import random
 from itertools import count
 
 import numpy as np
-import pygame
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -11,43 +9,7 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 from game import Game
-from utils import EPS, GAMMA, LR, SEED, WHITE, generate_id
-
-
-###################################################
-# general agents
-###################################################
-def human_agent():
-    action = 'null'
-
-    for event in pygame.event.get():
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_q:
-                action = 'close'
-            elif event.key == pygame.K_1:
-                action = 'barrack'
-            elif event.key == pygame.K_2:
-                action = 'blacksmith'
-            elif event.key == pygame.K_3:
-                action = 'windmill'
-            elif event.key == pygame.K_4:
-                action = 'footman'
-            elif event.key == pygame.K_5:
-                action = 'rifleman'
-            elif event.key == pygame.K_SPACE:
-                action = 'forward'
-            elif event.key == pygame.K_BACKSPACE:
-                action = 'backward'
-            elif event.key == pygame.K_r:
-                action = 'repair'
-            elif event.key == pygame.K_t:
-                action = 'stop_repair'
-
-    return action
-
-
-def random_agent(actions):
-    return random.choice(actions)
+from utils import EPS, GAMMA, LR, WHITE
 
 
 ###################################################
@@ -122,9 +84,6 @@ if __name__ == "__main__":
     # env setup
     game = Game(simple=False)
     state = game.reset()
-
-    # torch agent settings
-    updated = False
 
     # policy models
     best_policy = Policy(
@@ -218,12 +177,14 @@ if __name__ == "__main__":
                         white_wins += 1
                     else:
                         black_wins += 1
-                    white_win_rate = white_wins / (white_wins + black_wins)
+                    selfplay_white_win_rate = white_wins / (
+                        white_wins + black_wins
+                    )
 
                     episode_number += 1
 
                     print(
-                        f'{episode_number} [{i_selfplay_episode}/1000-{t:6d}] loss: {returned_policy_loss:.2f} white: {white_wins} black: {black_wins} white rate: {100. * white_win_rate:.2f}%'
+                        f'{episode_number} [{i_selfplay_episode}/1000-{t:6d}] loss: {returned_policy_loss:.2f} white: {white_wins} black: {black_wins} white rate: {100. * selfplay_white_win_rate:.2f}%'
                     )
 
         # 400 matches between latest and best
@@ -288,7 +249,7 @@ if __name__ == "__main__":
                     )
 
                     print(
-                        f'[{i_match_episode}/400-{t:6d}] white: {white_wins} black: {black_wins} white rate: {100. * white_win_rate:.2f}%'
+                        f'[{i_match_episode}/400-{t:6d}] white: {white_wins} black: {black_wins} white rate: {100. * match_white_win_rate:.2f}%'
                     )
 
         if match_white_win_rate > 0.55:
