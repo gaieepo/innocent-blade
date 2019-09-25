@@ -2,13 +2,13 @@ import os
 from itertools import count
 
 import numpy as np
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.distributions import Categorical
-
 from game import Game
+from torch.distributions import Categorical
 from utils import EPS, GAMMA, LR, WHITE
 
 
@@ -34,12 +34,14 @@ class Policy(nn.Module):
         return torch.softmax(action_scores, dim=1)
 
 
-def torch_agent(state, actions, save=True):
+def torch_agent(policy, state, actions, save=True):
     state = torch.from_numpy(state).float().unsqueeze(0)
-    probs = best_policy(state)
+    probs = policy(state)
     m = Categorical(probs)
     action = m.sample()
-    best_policy.saved_log_probs.append(m.log_prob(action))
+
+    if save:
+        best_policy.saved_log_probs.append(m.log_prob(action))
 
     return actions[action.item()]
 
@@ -147,10 +149,13 @@ if __name__ == "__main__":
 
                 # generate actions
                 white_action = torch_agent(
-                    input_state['white'], game.available_actions
+                    best_policy, input_state['white'], game.available_actions
                 )
                 black_action = torch_agent(
-                    input_state['black'], game.available_actions, save=False
+                    best_policy,
+                    input_state['black'],
+                    game.available_actions,
+                    save=False,
                 )
 
                 # update env
@@ -190,6 +195,9 @@ if __name__ == "__main__":
         white_wins, black_wins = 0, 0
         match_white_win_rate = 0.0
 
+        # load best model
+        best_policy.load_state_dict(torch.load('best.pth'))
+
         for i_match_episode in range(1, 401):
             prev_state = {'white': None, 'black': None}
             state = game.reset()
@@ -217,14 +225,16 @@ if __name__ == "__main__":
                 # generate actions
                 with torch.no_grad():
                     white_action = torch_agent(
-                        best_policy,
+                        latest_policy,
                         input_state['white'],
                         game.available_actions,
+                        save=False,
                     )
                     black_action = torch_agent(
                         best_policy,
                         input_state['black'],
                         game.available_actions,
+                        save=False,
                     )
 
                 # update env
@@ -245,10 +255,13 @@ if __name__ == "__main__":
                     )
 
                     print(
-                        f'[{i_match_episode}/400-{t:6d}] white: {white_wins} black: {black_wins} white rate: {100. * match_white_win_rate:.2f}%'
+                        f'[{i_match_episode}/400-{t}] white: {white_wins} black: {black_wins} white rate: {100. * match_white_win_rate:.2f}%'
                     )
 
                     break
 
         if match_white_win_rate > 0.55:
             torch.save(latest_policy.state_dict(), 'best.pth')
+            print(
+                f'White win rate is {match_white_win_rate:.2f} above 55%, saved new best'
+            )
