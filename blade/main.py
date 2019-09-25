@@ -11,7 +11,7 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 from game import Game
-from utils import GAMMA, MAX_GLOBAL_TIME, SEED, WHITE, LR
+from utils import GAMMA, LR, MAX_GLOBAL_TIME, SEED, WHITE
 
 
 ###################################################
@@ -185,13 +185,11 @@ if __name__ == "__main__":
             # preprocess input state
             input_state = {
                 'white': np.concatenate([state['white'], prev_state['white']])
-
                 if prev_state['white'] is not None
                 else np.concatenate(
                     [state['white'], np.zeros_like(state['white'])]
                 ),
                 'black': np.concatenate([state['black'], prev_state['black']])
-
                 if prev_state['black'] is not None
                 else np.concatenate(
                     [state['black'], np.zeros_like(state['black'])]

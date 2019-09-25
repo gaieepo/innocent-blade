@@ -5,10 +5,10 @@ import numpy as np
 import pygame
 
 from utils import (FPS, FULL_ACTIONS, GOLD_SPEED, HEIGHT, INITIAL_GOLD,
-                   LANE_LENGTH, MAX_POPULATION, PREPRO_DAMAGE,
-                   PREPRO_GOLD, PREPRO_TIME, SIMPLE_ACTIONS, SIMPLE_TECHS,
-                   SIMPLE_UNITS, UNIT_TEMPLATE, WIDTH, WINDMILL_GOLD_SPEED,
-                   Base, Footman, Rifleman)
+                   LANE_LENGTH, MAX_POPULATION, PREPRO_DAMAGE, PREPRO_GOLD,
+                   PREPRO_TIME, SIMPLE_ACTIONS, SIMPLE_TECHS, SIMPLE_UNITS,
+                   UNIT_TEMPLATE, WIDTH, WINDMILL_GOLD_SPEED, Base, Footman,
+                   Rifleman)
 
 
 class Faction:
@@ -26,6 +26,7 @@ class Faction:
         self.population = 0
         self.army = []
 
+        self.render = False
         self.render_state = {}
 
     def reset(self):
@@ -168,7 +169,7 @@ class Faction:
 
             self.render_state[k] = status
 
-        self.render_state['gold'] = self.gold
+        self.render_state['gold'] = int(self.gold)
         self.render_state['base'] = self.base.health
         self.render_state['repair'] = self.base.repairing
         self.render_state['frontier'] = '{:.1f} {}'.format(*self._frontier())
@@ -197,7 +198,9 @@ class Faction:
         self._gold_update()
 
         # prepare state for render
-        self._prepare_render_state()
+
+        if self.render:
+            self._prepare_render_state()
 
 
 class Game:
@@ -325,6 +328,9 @@ class Game:
             self.clock = pygame.time.Clock()
             self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
             self.surface = pygame.Surface(self.screen.get_size())
+
+            self.white.render = True
+            self.black.render = True
 
         self.surface.fill((255, 255, 255))
 

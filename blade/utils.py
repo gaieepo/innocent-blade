@@ -21,11 +21,11 @@ HEIGHT = 720
 WIDTH = 960
 FPS = 60
 
-INITIAL_GOLD = 120.0
+INITIAL_GOLD = 150.0
 GOLD_SPEED = 0.1
 WINDMILL_GOLD_SPEED = 0.2
 
-LANE_LENGTH = 10.0
+LANE_LENGTH = 650.0
 MAX_POPULATION = 7
 
 FULL_ACTIONS = [
@@ -47,7 +47,6 @@ SIMPLE_ACTIONS = [
     'close',
     'barrack',
     'blacksmith',
-    'windmill',
     'footman',
     'rifleman',
     'forward',
@@ -77,7 +76,7 @@ SIMPLE_TECHS = {
         'require': [],
         'time_cost': 30,
         'count_down': 30,
-        'gold_cost': 100,
+        'gold_cost': 150,
         'built': False,
         'building': False,
     },
@@ -257,7 +256,6 @@ class Base:
 
     def __init__(self, faction):
         self.faction = faction
-        self.distance = 0.0
 
         self.repairing = False
         self.max_health = self.__class__.HEALTH[0]
@@ -268,7 +266,9 @@ class Base:
         return '+' if self.repairing else '_'
 
     def __repr__(self):
-        return f'<{self.faction.side} H:{self.health:.1f}>'
+        return (
+            f'<{self.faction.side} {self.fmt_repairing} H:{self.health:.1f}>'
+        )
 
     def set_repair(self, flag):
         if flag:
@@ -306,7 +306,7 @@ class Unit:
         for k in kwargs:
             setattr(self, k, kwargs[k])
 
-        self.distance = 0.1
+        self.distance = 0.0
         self.speed = 0.1
 
         self.direction = 0  # -1, 0, 1
@@ -337,10 +337,13 @@ class Footman(Unit):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.max_health = 300.0
+        self.max_health = 280.0
         self.health = self.max_health
 
-        self.attack_range = 2.0
+        self.defense = 0.0  # can be 40 after upgrade
+        self.speed = 1.6 + random.random() / 5
+
+        self.attack_range = 5.0
         self.damage = (5, 10)
         # self.attack_animation = 2
         # self.attack_backswing = 2
@@ -354,11 +357,13 @@ class Rifleman(Unit):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.max_health = 200.0
+        self.max_health = 180.0
         self.health = self.max_health
 
-        self.attack_range = 5.0
-        self.damage = (20, 30)
+        self.speed = 1.3 + random.random() / 5
+
+        self.attack_range = 160.0
+        self.damage = (9, 18)
         # self.attack_animation = 2
         # self.attack_backswing = 2
         self.interval = 12
