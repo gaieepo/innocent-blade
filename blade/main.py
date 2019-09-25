@@ -34,12 +34,12 @@ class Policy(nn.Module):
         return torch.softmax(action_scores, dim=1)
 
 
-def torch_agent(policy, state, actions):
+def torch_agent(state, actions, save=True):
     state = torch.from_numpy(state).float().unsqueeze(0)
-    probs = policy(state)
+    probs = best_policy(state)
     m = Categorical(probs)
     action = m.sample()
-    policy.saved_log_probs.append(m.log_prob(action))
+    best_policy.saved_log_probs.append(m.log_prob(action))
 
     return actions[action.item()]
 
@@ -49,20 +49,20 @@ def finish_episode():
     policy_loss = []
     returns = []
 
-    for r in latest_policy.rewards[::-1]:
+    for r in best_policy.rewards[::-1]:
         R = r + GAMMA * R  # discount reward
         returns.insert(0, R)
     returns = torch.tensor(returns)
     returns = (returns - returns.mean()) / (returns.std() + EPS)
 
-    for log_prob, R in zip(latest_policy.saved_log_probs, returns):
+    for log_prob, R in zip(best_policy.saved_log_probs, returns):
         policy_loss.append(-log_prob * R)
     optimizer.zero_grad()
     policy_loss = torch.cat(policy_loss).sum()
     policy_loss.backward()
     optimizer.step()
-    del latest_policy.rewards[:]
-    del latest_policy.saved_log_probs[:]
+    del best_policy.rewards[:]
+    del best_policy.saved_log_probs[:]
 
     return policy_loss.item()
 
@@ -104,21 +104,16 @@ if __name__ == "__main__":
         torch.save(best_policy.state_dict(), 'best.pth')
 
     # hyper-parameters
-    optimizer = optim.Adam(latest_policy.parameters(), lr=LR)
+    optimizer = optim.Adam(best_policy.parameters(), lr=LR)
 
     # main loop
     episode_number = 0
 
     while True:
-        # load best
-        latest_policy.load_state_dict(torch.load('best.pth'))
-        best_policy.load_state_dict(torch.load('best.pth'))
-        print('Best weights loaded!!!')
-
-        # self-play 1000 games
+        # 1. self-play 1000 games
         print('Start self-play!!!')
-        latest_policy.train()
-        best_policy.eval()
+        latest_policy.eval()
+        best_policy.train()
 
         white_wins, black_wins = 0, 0
 
@@ -127,6 +122,7 @@ if __name__ == "__main__":
             state = game.reset()
 
             # load best model
+            latest_policy.load_state_dict(torch.load('best.pth'))
             best_policy.load_state_dict(torch.load('best.pth'))
 
             for t in count(1):  # TODO unlimited game time ???
@@ -150,17 +146,12 @@ if __name__ == "__main__":
                 prev_state = state
 
                 # generate actions
-                with torch.no_grad():
-                    white_action = torch_agent(
-                        best_policy,
-                        input_state['white'],
-                        game.available_actions,
-                    )
-                    black_action = torch_agent(
-                        best_policy,
-                        input_state['black'],
-                        game.available_actions,
-                    )
+                white_action = torch_agent(
+                    input_state['white'], game.available_actions
+                )
+                black_action = torch_agent(
+                    input_state['black'], game.available_actions, save=False
+                )
 
                 # update env
                 state, reward, done, info = game.step(
@@ -168,7 +159,7 @@ if __name__ == "__main__":
                 )
 
                 # record reward
-                latest_policy.rewards.append(reward[WHITE])
+                best_policy.rewards.append(reward[WHITE])
 
                 if done:
                     returned_policy_loss = finish_episode()
@@ -184,12 +175,17 @@ if __name__ == "__main__":
                     episode_number += 1
 
                     print(
-                        f'{episode_number} [{i_selfplay_episode}/1000-{t:6d}] loss: {returned_policy_loss:.2f} white: {white_wins} black: {black_wins} white rate: {100. * selfplay_white_win_rate:.2f}%'
+                        f'{episode_number} [{i_selfplay_episode}/1000-{t}] loss: {returned_policy_loss:.2f} white: {white_wins} black: {black_wins} white rate: {100. * selfplay_white_win_rate:.2f}%'
                     )
 
-        # 400 matches between latest and best
+                    # IMPORTANT copy weight from best to latest
+                    latest_policy.load_state_dict(best_policy.state_dict())
+
+                    break
+
+        # 2. 400 matches between latest and best
         print('Start matches!!!')
-        latest_policy.eval()
+        best_policy.eval()
 
         white_wins, black_wins = 0, 0
         match_white_win_rate = 0.0
@@ -251,6 +247,8 @@ if __name__ == "__main__":
                     print(
                         f'[{i_match_episode}/400-{t:6d}] white: {white_wins} black: {black_wins} white rate: {100. * match_white_win_rate:.2f}%'
                     )
+
+                    break
 
         if match_white_win_rate > 0.55:
             torch.save(latest_policy.state_dict(), 'best.pth')
