@@ -34,7 +34,7 @@ class Policy(nn.Module):
         return torch.softmax(action_scores, dim=1)
 
 
-def torch_agent(state, actions, save=True):
+def torch_agent(actions, save=True):
     state = torch.from_numpy(state).float().unsqueeze(0)
     probs = best_policy(state)
     m = Categorical(probs)
