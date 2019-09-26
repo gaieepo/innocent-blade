@@ -1,4 +1,11 @@
 /*
+ * MEMO:
+ * xxx - unit max health ??? current health is 'life'
+ * uxxx - max population ???
+ * attackzl - heal ???
+ * /
+
+/*
  * Define actions for objects
  */
 function xdsAction()
@@ -4290,10 +4297,11 @@ function js2Action()
 } // end actions
 
 /*
- * Constants?
+ * Constants ???
  */
 dwsxjg.gotoAndStop(61);
 hzbzjg.gotoAndStop(61);
+
 lordan._visible = heroan._visible = jsan._visible = hqsan._visible = jydan._visible = fsan._visible = xdsan._visible = hpan._visible = qsan._visible = jxban._visible = estanxlan._visible = estanxlan2._visible = false;
 ecb._visible = ebl._visible = eby._visible = ept._visible = est._visible = ejt._visible = efc._visible = egc._visible = etjp._visible = false;
 cb2._visible = bl2._visible = by2._visible = ecpt._visible = st2._visible = jt2._visible = fc2._visible = gc2._visible = tjp2._visible = ecastlesl._visible = false;
@@ -4677,20 +4685,27 @@ createqs2 = function()
    ecastle.unit = ecastle.unit + 1;
    peoplenm++;
 };
+
+/*
+ * Generals ???
+ */
+// foward button
 attackan.onRelease = function()
 {
    k = 0;
-   while(k < 15)
+   while(k < 15) // the reason why forward can apply on 15 people only
    {
       people[k].attackzl = 1;
       people[k].goal = ecastle;
-      if(people[k]._currentframe < 51)
+      if(people[k]._currentframe < 51) // before attack animation ???
       {
          people[k].gotoAndPlay(2);
       }
       k++;
    }
 };
+
+// backward button
 backan.onRelease = function()
 {
    k = 0;
@@ -4701,14 +4716,19 @@ backan.onRelease = function()
       k++;
    }
 };
+
+// repair on
 estanxlan.onRelease = function()
 {
    estansl._visible = true;
 };
+// repair off
 estanxlan2.onRelease = function()
 {
    estansl._visible = false;
 };
+
+
 lordan.onRollOver = function()
 {
    if(this._visible == true && this._currentframe == 1)
@@ -4817,6 +4837,8 @@ jxban.onRelease = function()
       }
    }
 };
+
+// footman
 jsan.onRollOver = function()
 {
    if(this._visible == true && this._currentframe == 1)
@@ -5069,6 +5091,8 @@ qsan.onRelease = function()
       }
    }
 };
+
+// barrack
 byan.onRollOver = function()
 {
    if(this._visible == true && this._currentframe == 1)
@@ -5100,6 +5124,8 @@ byan.onRelease = function()
       }
    }
 };
+
+// monatery
 jtan.onRollOver = function()
 {
    if(this._visible == true && this._currentframe == 1)
@@ -5131,6 +5157,8 @@ jtan.onRelease = function()
       }
    }
 };
+
+// workshop
 gcan.onRollOver = function()
 {
    if(this._visible == true && this._currentframe == 1)
@@ -5162,6 +5190,8 @@ gcan.onRelease = function()
       }
    }
 };
+
+// watchtower
 ptan.onRollOver = function()
 {
    if(this._visible == true && this._currentframe == 1)
@@ -5193,6 +5223,8 @@ ptan.onRelease = function()
       }
    }
 };
+
+// keep
 blan.onRollOver = function()
 {
    if(this._visible == true && this._currentframe == 1)
@@ -5224,6 +5256,8 @@ blan.onRelease = function()
       }
    }
 };
+
+// chancel
 stan.onRollOver = function()
 {
    if(this._visible == true && this._currentframe == 1)
@@ -5255,6 +5289,8 @@ stan.onRelease = function()
       }
    }
 };
+
+// castle
 cban.onRollOver = function()
 {
    if(this._visible == true && this._currentframe == 1)
@@ -5286,6 +5322,8 @@ cban.onRelease = function()
       }
    }
 };
+
+// steel blade
 jssjan.onRollOver = function()
 {
    if(this._visible == true && this._currentframe == 1)
@@ -5320,6 +5358,7 @@ jssjan.onRelease = function()
 xdssjan.onRollOver = function()
 {
    if(this._visible == true && this._currentframe == 1)
+    // castle
    {
       this.gotoAndStop(2);
       dwsxjg.gotoAndStop(61);
@@ -5627,6 +5666,7 @@ ljsan.onRelease = function()
       }
    }
 };
+
 xxxxx = 0;
 js2xl = 0;
 jsxst = 0;
@@ -5647,13 +5687,18 @@ ecastle.h2 = 1;
 ecastle.h3 = 1;
 ecastle.h4 = 1;
 ecastle.gold = 250;
+
+/*
+ * Base related
+ */
+// horrible AI script
 ecastle.onEnterFrame = function()
 {
    this.gold = this.gold + ecsl;
    egolds.text = int(this.gold);
    ecastlelife.text = int(this.life);
    ecastlexxx.text = int(this.xxx);
-   if(this.life <= 500 && this.flame == 0)
+   if(this.life <= 500 && this.flame == 0) // critical health on fire
    {
       this.flame = 1;
       flamelayer.attachMovie("flame",5,5);
@@ -6132,6 +6177,8 @@ ecastle.onEnterFrame = function()
    jxb2xl = jxb2xl % int(620 * r);
    hero3xl = hero3xl % int(120 + 30 * r);
 };
+
+// human
 estan.onEnterFrame = function()
 {
    this.gold = this.gold + sl;
@@ -6140,6 +6187,8 @@ estan.onEnterFrame = function()
    estanxxx.text = int(this.xxx);
    estanunit.text = this.unit;
    estanuxxx.text = this.uxxx;
+    // more of a passive observe on button press for create event
+    // units
    if(heroan._currentframe == 400)
    {
       createhero();
@@ -6190,7 +6239,9 @@ estan.onEnterFrame = function()
       createqs();
       qsan.gotoAndStop(1);
    }
-   if(byan._currentframe == 230)
+
+    // techs
+   if(byan._currentframe == 230) // barrack 60*(230-2)/18=760 frames
    {
       eby._visible = true;
       jsan._visible = true;
@@ -6361,6 +6412,8 @@ estan.onEnterFrame = function()
       jxban._visible = true;
       gjsan.gotoAndStop(501);
    }
+
+    // gold related: windmill -> transport -> alchemy
    if(fcan._currentframe == 560)
    {
       efc._visible = true;
@@ -6377,6 +6430,7 @@ estan.onEnterFrame = function()
       sl = sl + 0.4;
       ljsan.gotoAndStop(601);
    }
+
    if(this.life <= 500 && this.flame == 0)
    {
       this.flame = 1;
@@ -6417,6 +6471,7 @@ estan.onEnterFrame = function()
       estansl._visible = false;
    }
 };
+
 exue.onEnterFrame = function()
 {
    this.gotoAndStop(int(estan.life / estan.xxx * 100));
@@ -6547,6 +6602,7 @@ ecpt.onEnterFrame = function()
       }
    }
 };
+
 changlayer = function(x, y)
 {
    a = x.getDepth();

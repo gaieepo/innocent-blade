@@ -33,6 +33,9 @@ FPS = 60
 INITIAL_GOLD = 150.0
 GOLD_SPEED = 0.1
 WINDMILL_GOLD_SPEED = 0.2
+TRANSPORT_GOLD_SPEED = 0.3
+ALCHEMY_GOLD_SPEED = 0.4
+
 
 LANE_LENGTH = 50.0
 MAX_POPULATION = 7
@@ -243,8 +246,8 @@ SIMPLE_UNITS = {
         'name': 'Footman',
         'require': ['barrack'],
         'gold_cost': 70,
-        'time_cost': 15,
-        'count_down': 15,
+        'time_cost': 760,
+        'count_down': 760,
         'building': False,
     },
     'rifleman': {
