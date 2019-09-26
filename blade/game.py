@@ -170,7 +170,7 @@ class Faction:
             self.render_state[k] = status
 
         self.render_state['gold'] = int(self.gold)
-        self.render_state['base'] = self.base.health
+        self.render_state['base'] = int(self.base.health)
         self.render_state['repair'] = self.base.repairing
         self.render_state['frontier'] = '{:.1f} {}'.format(*self._frontier())
         self.render_state['population'] = self.population

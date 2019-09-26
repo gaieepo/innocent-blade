@@ -34,7 +34,7 @@ INITIAL_GOLD = 150.0
 GOLD_SPEED = 0.1
 WINDMILL_GOLD_SPEED = 0.2
 
-LANE_LENGTH = 300.0
+LANE_LENGTH = 50.0
 MAX_POPULATION = 7
 
 FULL_ACTIONS = [
@@ -371,11 +371,11 @@ class Rifleman(Unit):
 
         self.speed = 1.3 + random.random() / 5
 
-        self.attack_range = 160.0
+        self.attack_range = 10.0
         self.damage = (9, 18)
         # self.attack_animation = 2
         # self.attack_backswing = 2
-        self.interval = 12
+        self.interval = 6
 
     def attack(self):
         return random.uniform(*self.damage)
