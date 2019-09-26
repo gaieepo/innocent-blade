@@ -1,3 +1,6 @@
+/*
+ * Define actions for objects
+ */
 function xdsAction()
 {
    this.xue.gotoAndStop(int(this.life / this.xxx * 100));
@@ -4284,7 +4287,11 @@ function js2Action()
          k++;
       }
    }
-}
+} // end actions
+
+/*
+ * Constants?
+ */
 dwsxjg.gotoAndStop(61);
 hzbzjg.gotoAndStop(61);
 lordan._visible = heroan._visible = jsan._visible = hqsan._visible = jydan._visible = fsan._visible = xdsan._visible = hpan._visible = qsan._visible = jxban._visible = estanxlan._visible = estanxlan2._visible = false;
@@ -4323,6 +4330,10 @@ people[14]._x = 265;
 people[14].life = -1;
 people[14].number = 14;
 peoplenm++;
+
+/*
+ * Unit creation
+ */
 createjs = function()
 {
    var _loc1_ = bsxlh.pop();
