@@ -1,15 +1,8 @@
-import os
 import random
 
-import numpy as np
-import pygame
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.distributions import Categorical
-
 from game import Game
-from utils import SEED, WHITE
+
+from utils import WHITE
 
 
 ###################################################
@@ -21,11 +14,11 @@ def random_agent(actions):
 
 if __name__ == "__main__":
     # env settings
-    random.seed(SEED)
-    torch.manual_seed(SEED)
+    # random.seed(SEED)
+    # torch.manual_seed(SEED)
 
     # env setup
-    game = Game(simple=True)
+    game = Game()
     state = game.reset()
 
     # main loop

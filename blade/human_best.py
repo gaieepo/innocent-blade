@@ -82,11 +82,11 @@ def torch_agent(policy, state, actions):
 if __name__ == "__main__":
     """ Self-play training procedure """
     # env settings (should not use seeded random during training)
-    random.seed(SEED)
-    torch.manual_seed(SEED)
+    # random.seed(SEED)
+    # torch.manual_seed(SEED)
 
     # env setup
-    game = Game(simple=False, debug=True)
+    game = Game(simple=False, debug=False)
     state = game.reset()
 
     # policy models

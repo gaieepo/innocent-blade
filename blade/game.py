@@ -102,7 +102,7 @@ class Faction:
             # )
             pass
         else:
-            # self.population += 1
+            self.population += 1
             self.gold -= self.units[action]['gold_cost']
             self.units[action]['building'] = True
 
@@ -131,7 +131,6 @@ class Faction:
                 if v['count_down'] == 0:
                     v['building'] = False
                     v['count_down'] = v['time_cost']
-                    self.population += 1
                     self.army.append(UNIT_TEMPLATE[k](v))
 
     def _gold_update(self):

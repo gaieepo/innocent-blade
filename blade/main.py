@@ -84,7 +84,7 @@ if __name__ == "__main__":
     # torch.manual_seed(SEED)
 
     # env setup
-    game = Game(simple=False)
+    game = Game()
     state = game.reset()
 
     # policy models
@@ -202,7 +202,7 @@ if __name__ == "__main__":
             prev_state = {'white': None, 'black': None}
             state = game.reset()
 
-            for t in count(1):  # TODO unlimited game time ???
+            for t in count(1):
                 # preprocess input state
                 input_state = {
                     'white': np.concatenate(
