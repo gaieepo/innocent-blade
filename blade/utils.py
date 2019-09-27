@@ -36,7 +36,7 @@ WINDMILL_GOLD_SPEED = 0.6
 TRANSPORT_GOLD_SPEED = 0.9
 ALCHEMY_GOLD_SPEED = 1.3
 
-LANE_LENGTH = 50.0
+LANE_LENGTH = 100.0
 MAX_POPULATION = 7
 
 FULL_ACTIONS = [
@@ -315,6 +315,9 @@ class Footman(Unit):
         self.max_health = 280.0
         self.health = self.max_health
 
+        self.min_distance = 5.0
+        self.distance = self.min_distance
+
         self.defense = 0.0  # can be 40 after upgrade
         self.speed = 1.6 + random.random() / 5
 
@@ -334,6 +337,9 @@ class Rifleman(Unit):
 
         self.max_health = 180.0
         self.health = self.max_health
+
+        self.min_distance = 0.0
+        self.distance = self.min_distance
 
         self.speed = 1.3 + random.random() / 5
 

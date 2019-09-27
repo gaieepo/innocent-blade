@@ -29,7 +29,7 @@ class Faction:
         self.render = False
         self.render_state = {}
 
-    def reset(self):
+    def reset(self, debug):
         self.techs = copy.deepcopy(SIMPLE_TECHS)
         self.units = copy.deepcopy(SIMPLE_UNITS)
 
@@ -40,6 +40,10 @@ class Faction:
 
         self.population = 0
         self.army = []
+
+        if debug:
+            self.gold = 99999
+            self.base.health = 99999
 
     def _all_require_satisfied(self, reqs):
         rv = True
@@ -58,7 +62,7 @@ class Faction:
             fr - longest distance
             un - frontier unit
         """
-        fr, un = 0.0, None
+        fr, un = -1.0, None
 
         for unit in self.army:
             if not unit.dead and unit.distance > fr:
@@ -98,7 +102,7 @@ class Faction:
             # )
             pass
         else:
-            self.population += 1
+            # self.population += 1
             self.gold -= self.units[action]['gold_cost']
             self.units[action]['building'] = True
 
@@ -127,6 +131,7 @@ class Faction:
                 if v['count_down'] == 0:
                     v['building'] = False
                     v['count_down'] = v['time_cost']
+                    self.population += 1
                     self.army.append(UNIT_TEMPLATE[k](v))
 
     def _gold_update(self):
@@ -204,7 +209,7 @@ class Faction:
 
 
 class Game:
-    def __init__(self, simple=False):
+    def __init__(self, simple=False, debug=False):
         self.screen = None
         self.white = Faction('white')
         self.black = Faction('black')
@@ -213,6 +218,8 @@ class Game:
             self.actions = SIMPLE_ACTIONS
         else:
             self.actions = FULL_ACTIONS
+
+        self.debug = debug
 
     @property
     def available_actions(self):
@@ -311,8 +318,8 @@ class Game:
 
     def reset(self):
         # reset two factions
-        self.white.reset()
-        self.black.reset()
+        self.white.reset(debug=self.debug)
+        self.black.reset(debug=False)
 
         # prepare state
         state = self._observation()
@@ -343,7 +350,7 @@ class Game:
         black_textpos.right = WIDTH
         self.surface.blit(black_text, black_textpos)
 
-        fps_text = font.render(str(self.clock.get_fps()), 1, (10, 10, 10))
+        fps_text = font.render(str(int(self.clock.get_fps())), 1, (10, 10, 10))
         fps_textpos = fps_text.get_rect()
         fps_textpos.midtop = (WIDTH / 2, 0)
         self.surface.blit(fps_text, fps_textpos)
@@ -476,7 +483,10 @@ class Game:
             ):
                 unit.distance += unit.speed
                 unit.static = False
-            elif unit.direction == -1 and unit.distance - unit.speed >= 0:
+            elif (
+                unit.direction == -1
+                and unit.distance - unit.speed >= unit.min_distance
+            ):
                 unit.distance -= unit.speed
                 unit.static = False
 
@@ -495,7 +505,10 @@ class Game:
             ):
                 unit.distance += unit.speed
                 unit.static = False
-            elif unit.direction == -1 and unit.distance - unit.speed >= 0:
+            elif (
+                unit.direction == -1
+                and unit.distance - unit.speed >= unit.min_distance
+            ):
                 unit.distance -= unit.speed
                 unit.static = False
 

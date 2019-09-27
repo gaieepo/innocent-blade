@@ -86,7 +86,7 @@ if __name__ == "__main__":
     torch.manual_seed(SEED)
 
     # env setup
-    game = Game(simple=False)
+    game = Game(simple=False, debug=True)
     state = game.reset()
 
     # policy models
