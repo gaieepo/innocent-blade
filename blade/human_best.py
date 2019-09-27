@@ -29,8 +29,12 @@ def human_agent():
             elif event.key == pygame.K_3:
                 action = 'windmill'
             elif event.key == pygame.K_4:
-                action = 'footman'
+                action = 'steel_blade'
             elif event.key == pygame.K_5:
+                action = 'long_barrelled_gun'
+            elif event.key == pygame.K_z:
+                action = 'footman'
+            elif event.key == pygame.K_x:
                 action = 'rifleman'
             elif event.key == pygame.K_SPACE:
                 action = 'forward'
@@ -86,7 +90,7 @@ if __name__ == "__main__":
     # torch.manual_seed(SEED)
 
     # env setup
-    game = Game(simple=False, debug=False)
+    game = Game()
     state = game.reset()
 
     # policy models

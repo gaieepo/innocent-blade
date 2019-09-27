@@ -45,6 +45,8 @@ FULL_ACTIONS = [
     'barrack',
     'blacksmith',
     'windmill',
+    'steel_blade',
+    'long_barrelled_gun',
     'footman',
     'rifleman',
     'forward',
@@ -91,6 +93,24 @@ SIMPLE_TECHS = {
         'built': False,
         'building': False,
     },
+    'steel_blade': {
+        'name': 'Steel Blade',
+        'require': ['blacksmith'],
+        'time_cost': 450,
+        'count_down': 450,
+        'gold_cost': 100,
+        'built': False,
+        'building': False,
+    },
+    'long_barrelled_gun': {
+        'name': 'Long-barrelled Gun',
+        'require': ['blacksmith'],
+        'time_cost': 580,
+        'count_down': 580,
+        'gold_cost': 180,
+        'built': False,
+        'building': False,
+    },
 }
 
 TECHS = {
@@ -100,12 +120,7 @@ TECHS = {
         'built': False,
         'building': False,
     },
-    'keep': {
-        'name': 'Keep',
-        'require': [],
-        'built': False,
-        'building': False,
-    },
+    'keep': {'name': 'Keep', 'require': [], 'built': False, 'building': False},
     'blacksmith': {
         'name': 'Blacksmith',
         'require': [],
@@ -204,7 +219,7 @@ TECHS = {
     },
 }
 
-SIMPLE_UNITS = {
+UNITS = {
     'footman': {
         'name': 'Footman',
         'require': ['barrack'],
@@ -312,23 +327,24 @@ class Footman(Unit):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.max_health = 280.0
+        self.max_health = 280.0 + (
+            40.0 if self.faction.techs['steel_blade']['built'] else 0.0
+        )
         self.health = self.max_health
 
         self.min_distance = 5.0
         self.distance = self.min_distance
 
-        self.defense = 0.0  # can be 40 after upgrade
         self.speed = 1.6 + random.random() / 5
 
         self.attack_range = 5.0
-        self.damage = (5, 10)
+        self.damage = 5
         # self.attack_animation = 2
         # self.attack_backswing = 2
         self.interval = 10
 
     def attack(self):
-        return random.uniform(*self.damage)
+        return random.uniform(self.damage, 2 * self.damage)
 
 
 class Rifleman(Unit):
@@ -344,13 +360,22 @@ class Rifleman(Unit):
         self.speed = 1.3 + random.random() / 5
 
         self.attack_range = 10.0
-        self.damage = (9, 18)
+        self.damage = 9 + (
+            3 if self.faction.techs['long_barrelled_gun']['built'] else 0
+        )
         # self.attack_animation = 2
         # self.attack_backswing = 2
         self.interval = 6
 
     def attack(self):
-        return random.uniform(*self.damage)
+        return random.uniform(self.damage, 2 * self.damage)
 
 
 UNIT_TEMPLATE = {'footman': Footman, 'rifleman': Rifleman}
+
+VIZ = {
+    'not': (255, 0, 1),
+    'can': (0, 0, 255),
+    'building': (255, 255, 0),
+    'built': (0, 255, 0),
+}

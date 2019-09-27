@@ -6,8 +6,8 @@ import pygame
 
 from utils import (FPS, FULL_ACTIONS, GOLD_SPEED, HEIGHT, INITIAL_GOLD,
                    LANE_LENGTH, MAX_POPULATION, PREPRO_DAMAGE, PREPRO_GOLD,
-                   PREPRO_TIME, SIMPLE_ACTIONS, SIMPLE_TECHS, SIMPLE_UNITS,
-                   UNIT_TEMPLATE, WIDTH, WINDMILL_GOLD_SPEED, Base, Footman,
+                   PREPRO_TIME, SIMPLE_ACTIONS, SIMPLE_TECHS, UNIT_TEMPLATE,
+                   UNITS, VIZ, WIDTH, WINDMILL_GOLD_SPEED, Base, Footman,
                    Rifleman)
 
 
@@ -16,7 +16,7 @@ class Faction:
         self.side = side
 
         self.techs = copy.deepcopy(SIMPLE_TECHS)
-        self.units = copy.deepcopy(SIMPLE_UNITS)
+        self.units = copy.deepcopy(UNITS)
 
         self.gold = INITIAL_GOLD
         self.gold_speed = GOLD_SPEED
@@ -31,7 +31,7 @@ class Faction:
 
     def reset(self, debug):
         self.techs = copy.deepcopy(SIMPLE_TECHS)
-        self.units = copy.deepcopy(SIMPLE_UNITS)
+        self.units = copy.deepcopy(UNITS)
 
         self.gold = INITIAL_GOLD
         self.gold_speed = GOLD_SPEED
@@ -69,6 +69,7 @@ class Faction:
                 fr = unit.distance
                 un = unit
 
+        # base
         if un is None:
             fr = 0.0
             un = self.base
@@ -131,7 +132,7 @@ class Faction:
                 if v['count_down'] == 0:
                     v['building'] = False
                     v['count_down'] = v['time_cost']
-                    self.army.append(UNIT_TEMPLATE[k](v))
+                    self.army.append(UNIT_TEMPLATE[k]({'faction': self}, v))
 
     def _gold_update(self):
         if self.techs['windmill']['built']:
@@ -202,7 +203,6 @@ class Faction:
         self._gold_update()
 
         # prepare state for render
-
         if self.render:
             self._prepare_render_state()
 
@@ -232,7 +232,6 @@ class Game:
         state['black'].append(max(self.black.gold / PREPRO_GOLD, 1.0))
 
         # 2. techs
-
         for k, v in self.white.techs.items():
             state['white'].extend(
                 [
@@ -266,12 +265,11 @@ class Game:
                         / self.white.army[i].interval,
                         self.white.army[i].health
                         / self.white.army[i].max_health,
-                        self.white.army[i].damage[0] / PREPRO_DAMAGE,
-                        self.white.army[i].damage[1] / PREPRO_DAMAGE,
+                        self.white.army[i].damage / PREPRO_DAMAGE,
                     ]
                 )
             else:
-                state_white_army.extend([0] * 7)
+                state_white_army.extend([0] * 6)
 
             if i < len(self.black.army):
                 state_black_army.extend(
@@ -283,12 +281,11 @@ class Game:
                         / self.black.army[i].interval,
                         self.black.army[i].health
                         / self.black.army[i].max_health,
-                        self.black.army[i].damage[0] / PREPRO_DAMAGE,
-                        self.black.army[i].damage[1] / PREPRO_DAMAGE,
+                        self.black.army[i].damage / PREPRO_DAMAGE,
                     ]
                 )
             else:
-                state_black_army.extend([0] * 7)
+                state_black_army.extend([0] * 6)
 
         state['white'].extend(state_white_army)
         state['white'].extend(state_black_army)
@@ -356,7 +353,6 @@ class Game:
 
         # render state text
         # (optional) render action
-
         if white_action is not None and black_action is not None:
             self.white.render_state['action'] = white_action
             self.black.render_state['action'] = black_action
@@ -365,7 +361,10 @@ class Game:
 
         for k, v in self.white.render_state.items():
             if k != 'army':
-                k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
+                if v in VIZ:
+                    k_text = font.render(f'{k}', 1, VIZ[v])
+                else:
+                    k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
                 k_textpos = k_text.get_rect()
                 k_textpos.top = white_offset
                 self.surface.blit(k_text, k_textpos)
@@ -375,7 +374,10 @@ class Game:
 
         for k, v in self.black.render_state.items():
             if k != 'army':
-                k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
+                if v in VIZ:
+                    k_text = font.render(f'{k}', 1, VIZ[v])
+                else:
+                    k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
                 k_textpos = k_text.get_rect()
                 k_textpos.right = WIDTH
                 k_textpos.top = black_offset
@@ -383,7 +385,6 @@ class Game:
                 black_offset += 30
 
         # render comic army
-
         for unit in self.white.army:
             if isinstance(unit, Footman):
                 pygame.draw.rect(
@@ -524,7 +525,6 @@ class Game:
         end_status = None
 
         # damage and health calculation
-
         for unit in self.white.army:
             fr, un = self.black._frontier()
             target_distance = LANE_LENGTH - fr - unit.distance
@@ -570,7 +570,6 @@ class Game:
                 # TODO hit and run
 
         # remove dead units
-
         for unit in self.white.army:
             if unit.dead:
                 self.white.army.remove(unit)
