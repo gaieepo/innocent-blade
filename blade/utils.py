@@ -341,7 +341,7 @@ class Footman(Unit):
         self.damage = 5
         # self.attack_animation = 2
         # self.attack_backswing = 2
-        self.interval = 10
+        self.interval = 14
 
     def attack(self):
         return random.uniform(self.damage, 2 * self.damage)
@@ -365,7 +365,7 @@ class Rifleman(Unit):
         )
         # self.attack_animation = 2
         # self.attack_backswing = 2
-        self.interval = 6
+        self.interval = 14
 
     def attack(self):
         return random.uniform(self.damage, 2 * self.damage)
