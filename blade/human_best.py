@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from torch.distributions import Categorical
 
 from game import Game
-from utils import SEED, WHITE
+from utils import WHITE
 
 
 ###################################################
@@ -32,6 +32,8 @@ def human_agent():
                 action = 'steel_blade'
             elif event.key == pygame.K_5:
                 action = 'long_barrelled_gun'
+            elif event.key == pygame.K_6:
+                action = 'keep'
             elif event.key == pygame.K_z:
                 action = 'footman'
             elif event.key == pygame.K_x:
@@ -90,7 +92,7 @@ if __name__ == "__main__":
     # torch.manual_seed(SEED)
 
     # env setup
-    game = Game()
+    game = Game(debug=True)
     state = game.reset()
 
     # policy models

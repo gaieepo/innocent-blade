@@ -28,7 +28,7 @@ BLACK = 1
 
 HEIGHT = 720
 WIDTH = 960
-FPS = 20
+FPS = 60
 
 INITIAL_GOLD = 150.0
 GOLD_SPEED = 0.4
@@ -37,7 +37,9 @@ TRANSPORT_GOLD_SPEED = 0.9
 ALCHEMY_GOLD_SPEED = 1.3
 
 LANE_LENGTH = 100.0
-MAX_POPULATION = 7
+
+DEFAULT_MAX_POPULATION = 5
+KEEP_MAX_POPULATION = 7
 
 FULL_ACTIONS = [
     'null',
@@ -47,6 +49,7 @@ FULL_ACTIONS = [
     'windmill',
     'steel_blade',
     'long_barrelled_gun',
+    'keep',
     'footman',
     'rifleman',
     'forward',
@@ -108,6 +111,15 @@ SIMPLE_TECHS = {
         'time_cost': 580,
         'count_down': 580,
         'gold_cost': 180,
+        'built': False,
+        'building': False,
+    },
+    'keep': {
+        'name': 'Keep',
+        'require': [],
+        'time_cost': 600,
+        'count_down': 600,
+        'gold_cost': 500,
         'built': False,
         'building': False,
     },

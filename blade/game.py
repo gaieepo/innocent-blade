@@ -4,11 +4,11 @@ import sys
 import numpy as np
 import pygame
 
-from utils import (FPS, FULL_ACTIONS, GOLD_SPEED, HEIGHT, INITIAL_GOLD,
-                   LANE_LENGTH, MAX_POPULATION, PREPRO_DAMAGE, PREPRO_GOLD,
-                   PREPRO_TIME, SIMPLE_ACTIONS, SIMPLE_TECHS, UNIT_TEMPLATE,
-                   UNITS, VIZ, WIDTH, WINDMILL_GOLD_SPEED, Base, Footman,
-                   Rifleman)
+from utils import (DEFAULT_MAX_POPULATION, FPS, FULL_ACTIONS, GOLD_SPEED,
+                   HEIGHT, INITIAL_GOLD, KEEP_MAX_POPULATION, LANE_LENGTH,
+                   PREPRO_DAMAGE, PREPRO_GOLD, PREPRO_TIME, SIMPLE_ACTIONS,
+                   SIMPLE_TECHS, UNIT_TEMPLATE, UNITS, VIZ, WIDTH,
+                   WINDMILL_GOLD_SPEED, Base, Footman, Rifleman)
 
 
 class Faction:
@@ -23,6 +23,7 @@ class Faction:
 
         self.base = Base(self)
 
+        self.max_population = DEFAULT_MAX_POPULATION
         self.population = 0
         self.army = []
 
@@ -96,7 +97,7 @@ class Faction:
             self.units[action]['building']
             or self.units[action]['gold_cost'] > self.gold
             or not self._all_require_satisfied(self.units[action]['require'])
-            or self.population >= MAX_POPULATION
+            or self.population >= self.max_population
         ):
             # print(
             #     f'{self.side} illegal action {action}: unit cannot been built'
@@ -123,6 +124,8 @@ class Faction:
                 if v['count_down'] == 0:
                     v['built'] = True
                     v['building'] = False
+                    if k == 'keep':
+                        self.max_population = KEEP_MAX_POPULATION
 
     def _unit_count_down(self):
         for k, v in self.units.items():
@@ -178,7 +181,9 @@ class Faction:
         self.render_state['base'] = int(self.base.health)
         self.render_state['repair'] = self.base.repairing
         self.render_state['frontier'] = '{:.1f} {}'.format(*self._frontier())
-        self.render_state['population'] = self.population
+        self.render_state['population'] = '{}/{}'.format(
+            self.population, self.max_population
+        )
 
     def faction_step(self, action):
         # - active update
@@ -254,7 +259,7 @@ class Game:
         state_white_army = []
         state_black_army = []
 
-        for i in range(MAX_POPULATION):
+        for i in range(KEEP_MAX_POPULATION):
             if i < len(self.white.army):
                 state_white_army.extend(
                     [
@@ -337,7 +342,7 @@ class Game:
 
         self.surface.fill((255, 255, 255))
 
-        font = pygame.font.Font(None, 36)
+        font = pygame.font.Font(None, 24)
         white_text = font.render('White', 1, (10, 10, 10))
         self.surface.blit(white_text, white_text.get_rect())
 
@@ -368,7 +373,7 @@ class Game:
                 k_textpos = k_text.get_rect()
                 k_textpos.top = white_offset
                 self.surface.blit(k_text, k_textpos)
-                white_offset += 30
+                white_offset += 20
 
         black_offset = 50
 
@@ -382,7 +387,7 @@ class Game:
                 k_textpos.right = WIDTH
                 k_textpos.top = black_offset
                 self.surface.blit(k_text, k_textpos)
-                black_offset += 30
+                black_offset += 20
 
         # render comic army
         for unit in self.white.army:
