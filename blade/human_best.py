@@ -1,3 +1,4 @@
+import argparse
 import os
 import random
 
@@ -87,12 +88,18 @@ def torch_agent(policy, state, actions):
 
 if __name__ == "__main__":
     """ Self-play training procedure """
+    parser = argparse.ArgumentParser(description='self play against best')
+    parser.add_argument(
+        '-d', '--debug', action='store_true', help='debug or not'
+    )
+    args = parser.parse_args()
+
     # env settings (should not use seeded random during training)
     # random.seed(SEED)
     # torch.manual_seed(SEED)
 
     # env setup
-    game = Game(debug=True)
+    game = Game(debug=args.debug)
     state = game.reset()
 
     # policy models
