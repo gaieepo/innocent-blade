@@ -5128,7 +5128,7 @@ byan.onRelease = function()
    }
 };
 
-// monatery
+// monastery
 jtan.onRollOver = function()
 {
    if(this._visible == true && this._currentframe == 1)
@@ -6281,7 +6281,7 @@ estan.onEnterFrame = function()
          qsan._visible = true;
       }
    }
-    // monatery
+    // monastery
    if(jtan._currentframe == 360)
    {
       ejt._visible = true;
