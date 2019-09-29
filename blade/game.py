@@ -4,13 +4,13 @@ import sys
 import numpy as np
 import pygame
 
-from utils import (BLACKSMITH_POPULATION, DEFAULT_MAX_POPULATION, FPS,
-                   FULL_ACTIONS, GOLD_SPEED, HEIGHT, INITIAL_GOLD,
-                   KEEP_MAX_POPULATION, LANE_LENGTH, PREPRO_DAMAGE,
-                   PREPRO_GOLD, PREPRO_TIME, SIMPLE_ACTIONS, SIMPLE_TECHS,
-                   TRANSPORT_GOLD_SPEED, UNIT_TEMPLATE, UNITS, VIZ, WIDTH,
-                   WINDMILL_GOLD_SPEED, Base, Footman, Monk, Rifleman,
-                   Watchtower)
+from utils import (BLACKSMITH_POPULATION_INCREMENT, DEFAULT_MAX_POPULATION,
+                   FPS, FULL_ACTIONS, FULL_MAX_POPULATION, GOLD_SPEED, HEIGHT,
+                   INITIAL_GOLD, KEEP_POPULATION_INCREMENT, LANE_LENGTH,
+                   PREPRO_DAMAGE, PREPRO_GOLD, PREPRO_TIME, SIMPLE_ACTIONS,
+                   SIMPLE_TECHS, TRANSPORT_GOLD_SPEED, UNIT_TEMPLATE, UNITS,
+                   VIZ, WIDTH, WINDMILL_GOLD_SPEED, Base, Footman, Monk,
+                   Rifleman, Watchtower)
 
 
 class Faction:
@@ -47,7 +47,6 @@ class Faction:
 
         if debug:
             self.gold = 99999
-            self.base.health = 99999
 
     def _all_require_satisfied(self, reqs):
         rv = True
@@ -130,9 +129,10 @@ class Faction:
 
                     # update population and watchtower
                     if k == 'blacksmith':
-                        self.max_population = BLACKSMITH_POPULATION
+                        self.max_population += BLACKSMITH_POPULATION_INCREMENT
                     elif k == 'keep':
-                        self.max_population = KEEP_MAX_POPULATION
+                        self.max_population += KEEP_POPULATION_INCREMENT
+                        self.base.max_health = Base.HEALTH[1]
                     elif k == 'watchtower':
                         self.watchtower = Watchtower()
 
@@ -270,7 +270,7 @@ class Game:
         state_white_army = []
         state_black_army = []
 
-        for i in range(KEEP_MAX_POPULATION):
+        for i in range(FULL_MAX_POPULATION):
             if i < len(self.white.army):
                 state_white_army.extend(
                     [
@@ -379,6 +379,21 @@ class Game:
             if k != 'army':
                 if v in VIZ:
                     k_text = font.render(f'{k}', 1, VIZ[v])
+                elif k == 'base':
+                    white_base_health_ratio = np.clip(
+                        self.white.base.health / self.white.base.max_health,
+                        0,
+                        1,
+                    )
+                    k_text = font.render(
+                        f'{k}: {v}',
+                        1,
+                        (
+                            255 * (1 - white_base_health_ratio),
+                            255 * white_base_health_ratio,
+                            0,
+                        ),
+                    )
                 else:
                     k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
                 k_textpos = k_text.get_rect()
@@ -392,6 +407,21 @@ class Game:
             if k != 'army':
                 if v in VIZ:
                     k_text = font.render(f'{k}', 1, VIZ[v])
+                elif k == 'base':
+                    black_base_health_ratio = np.clip(
+                        self.black.base.health / self.black.base.max_health,
+                        0,
+                        1,
+                    )
+                    k_text = font.render(
+                        f'{k}: {v}',
+                        1,
+                        (
+                            255 * (1 - black_base_health_ratio),
+                            255 * black_base_health_ratio,
+                            0,
+                        ),
+                    )
                 else:
                     k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
                 k_textpos = k_text.get_rect()
@@ -577,6 +607,9 @@ class Game:
                     un.max_health - unit.heal
                 ):
                     un.health = min(un.max_health, un.health + unit.heal)
+
+                    # heal also cool down
+                    unit.cool_down = (unit.cool_down + 1) % unit.interval
 
                     # heal then do not attack
                     continue

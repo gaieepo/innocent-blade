@@ -38,9 +38,10 @@ ALCHEMY_GOLD_SPEED = 1.3
 
 LANE_LENGTH = 100.0
 
+FULL_MAX_POPULATION = 7
 DEFAULT_MAX_POPULATION = 4
-BLACKSMITH_POPULATION = 5
-KEEP_MAX_POPULATION = 7
+BLACKSMITH_POPULATION_INCREMENT = 1
+KEEP_POPULATION_INCREMENT = 2
 
 FULL_ACTIONS = [
     'null',
@@ -358,6 +359,7 @@ class Unit:
         for k in kwargs:
             setattr(self, k, kwargs[k])
 
+        self.min_distance = 0.0
         self.distance = 0.0
         self.speed = 0.1
 
@@ -418,7 +420,6 @@ class Rifleman(Unit):
         self.max_health = 180.0
         self.health = self.max_health
 
-        self.min_distance = 0.0
         self.distance = self.min_distance
 
         self.speed = 1.3 + random.random() / 5
@@ -442,7 +443,6 @@ class Monk(Unit):
         self.max_health = 120.0
         self.health = self.max_health
 
-        self.min_distance = 0.0
         self.distance = self.min_distance
 
         self.speed = 1.3 + random.random() / 5
@@ -452,7 +452,7 @@ class Monk(Unit):
         self.damage = 7
         # self.attack_animation = 2
         # self.attack_backswing = 2
-        self.interval = 24
+        self.interval = 14
 
         self.healable = True
 
