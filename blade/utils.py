@@ -452,7 +452,7 @@ class Monk(Unit):
         self.damage = 7
         # self.attack_animation = 2
         # self.attack_backswing = 2
-        self.interval = 17
+        self.interval = 24
 
         self.healable = True
 

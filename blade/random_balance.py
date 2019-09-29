@@ -1,7 +1,7 @@
+import argparse
 import random
 
 from game import Game
-
 from utils import WHITE
 
 
@@ -13,12 +13,27 @@ def random_agent(actions):
 
 
 if __name__ == "__main__":
+    """ script for quick examination of game balance """
+    parser = argparse.ArgumentParser(
+        description='script for quick examination of game balance'
+    )
+    parser.add_argument(
+        '-s', '--simple', action='store_true', help='simple actions'
+    )
+    parser.add_argument(
+        '-i',
+        '--identical',
+        action='store_true',
+        help='identical action for both black and white',
+    )
+    args = parser.parse_args()
+
     # env settings
     # random.seed(SEED)
     # torch.manual_seed(SEED)
 
     # env setup
-    game = Game()
+    game = Game(simple=args.simple)
     state = game.reset()
 
     # main loop
@@ -33,7 +48,10 @@ if __name__ == "__main__":
 
             # generate actions
             white_action = random_agent(game.available_actions)
-            black_action = random_agent(game.available_actions)
+            if args.identical:
+                black_action = white_action
+            else:
+                black_action = random_agent(game.available_actions)
 
             # update env
             state, reward, done, info = game.step(white_action, black_action)
