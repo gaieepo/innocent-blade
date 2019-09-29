@@ -601,10 +601,16 @@ class Game:
 
         # damage and health calculation
         for unit in self.white.army:
+            # heal logic
             if unit.healable:
+                # iterate all units in own army
+                # for un in sorted(
+                #     self.white.army, key=lambda x: x.distance, reverse=True
+                # ):
+                #     pass
+
                 fr, un = self.white._frontier()
                 target_distance = fr - unit.distance  # assured not base
-                print(self.timer, unit.ready(target_distance), unit.cool_down)
 
                 if unit.ready(target_distance) and un.health < (
                     un.max_health - unit.heal
@@ -617,6 +623,7 @@ class Game:
                     # heal then do not attack
                     continue
 
+            # attack logic
             fr, un = self.black._frontier()
             target_distance = LANE_LENGTH - fr - unit.distance
 
@@ -633,9 +640,10 @@ class Game:
                         return end_status
 
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
-            elif target_distance <= unit.attack_range and unit.cool_down > 0:
-                unit.cool_down = (unit.cool_down + 1) % unit.interval
+            else:
                 # TODO hit and run
+                # target_distance <= unit.attack_range and unit.cool_down > 0
+                unit.cool_down = (unit.cool_down + 1) % unit.interval
 
         # white watchtower
         if self.white.watchtower is not None:
@@ -656,6 +664,7 @@ class Game:
                 ) % white_watchtower.interval
 
         for unit in self.black.army:
+            # heal logic
             if unit.healable:
                 fr, un = self.black._frontier()
                 target_distance = fr - unit.distance  # assured not base
@@ -671,6 +680,7 @@ class Game:
                     # heal then do not attack
                     continue
 
+            # attack logic
             fr, un = self.white._frontier()
             target_distance = LANE_LENGTH - fr - unit.distance
 
@@ -687,9 +697,10 @@ class Game:
                         return end_status
 
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
-            elif target_distance <= unit.attack_range and unit.cool_down > 0:
-                unit.cool_down = (unit.cool_down + 1) % unit.interval
+            else:
                 # TODO hit and run
+                # target_distance <= unit.attack_range and unit.cool_down > 0
+                unit.cool_down = (unit.cool_down + 1) % unit.interval
 
         # black watchtower
         if self.black.watchtower is not None:
@@ -760,4 +771,4 @@ class Game:
             # reset
             self.fps = FPS
         else:
-            self.fps = np.clip(self.fps + step, 20, 120)
+            self.fps = np.clip(self.fps + step, 5, 120)
