@@ -234,11 +234,13 @@ class Game:
         else:
             self.actions = FULL_ACTIONS
 
+        self.timer = 0
         self.debug = debug
+        self.fps = FPS
 
     @property
     def available_actions(self):
-        return tuple(action for action in self.actions if action != 'close')
+        return tuple(action for action in self.actions)
 
     def _observation(self):
         state = {'white': [], 'black': []}
@@ -521,7 +523,7 @@ class Game:
         if mode == 'human':
             pygame.display.flip()
 
-        self.clock.tick(FPS)
+        self.clock.tick(self.fps)
 
     def _global_action(self, white_action, black_action):
         for side, action in (('white', white_action), ('black', black_action)):
@@ -602,6 +604,7 @@ class Game:
             if unit.healable:
                 fr, un = self.white._frontier()
                 target_distance = fr - unit.distance  # assured not base
+                print(self.timer, unit.ready(target_distance), unit.cool_down)
 
                 if unit.ready(target_distance) and un.health < (
                     un.max_health - unit.heal
@@ -622,7 +625,6 @@ class Game:
 
                 if un.health <= 0:
                     if not isinstance(un, Base):
-                        # self.black.army.remove(un)
                         un.dead = True
                         self.black.population -= 1
                     else:
@@ -663,6 +665,9 @@ class Game:
                 ):
                     un.health = min(un.max_health, un.health + unit.heal)
 
+                    # heal also cool down
+                    unit.cool_down = (unit.cool_down + 1) % unit.interval
+
                     # heal then do not attack
                     continue
 
@@ -674,7 +679,6 @@ class Game:
 
                 if un.health <= 0:
                     if not isinstance(un, Base):
-                        # self.white.army.remove(un)
                         un.dead = True
                         self.white.population -= 1
                     else:
@@ -717,6 +721,7 @@ class Game:
         return end_status
 
     def step(self, white_action, black_action):
+        self.timer += 1
         reward = (0, 0)  # 0 for most cases because not scored at the moment
         done = False
         info = {}
@@ -749,3 +754,10 @@ class Game:
 
         if close_all:
             sys.exit()
+
+    def set_fps(self, step=None):
+        if step is None:
+            # reset
+            self.fps = FPS
+        else:
+            self.fps = np.clip(self.fps + step, 20, 120)

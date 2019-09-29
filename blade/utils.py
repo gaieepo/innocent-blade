@@ -45,7 +45,6 @@ KEEP_POPULATION_INCREMENT = 2
 
 FULL_ACTIONS = [
     'null',
-    'close',
     'barrack',
     'blacksmith',
     'windmill',

@@ -55,6 +55,12 @@ def human_agent():
                 action = 'repair'
             elif event.key == pygame.K_t:
                 action = 'stop_repair'
+            elif event.key == pygame.K_RIGHT:
+                action = 'reset_fps'
+            elif event.key == pygame.K_UP:
+                action = 'up_fps'
+            elif event.key == pygame.K_DOWN:
+                action = 'down_fps'
 
     return action
 
@@ -163,6 +169,15 @@ if __name__ == "__main__":
             # close game and app
             if white_action == 'close':
                 game.close()
+            elif white_action == 'up_fps':
+                game.set_fps(step=5)
+                white_action = 'null'
+            elif white_action == 'down_fps':
+                game.set_fps(step=-5)
+                white_action = 'null'
+            elif white_action == 'reset_fps':
+                game.set_fps()
+                white_action = 'null'
 
             # update env
             state, reward, done, info = game.step(white_action, black_action)
