@@ -19,7 +19,7 @@ def generate_id():
 
 # prepro
 PREPRO_GOLD = 1000.0
-PREPRO_TIME = 100.0
+PREPRO_TIME = 1000.0
 PREPRO_DAMAGE = 50.0
 
 # game related
@@ -38,7 +38,8 @@ ALCHEMY_GOLD_SPEED = 1.3
 
 LANE_LENGTH = 100.0
 
-DEFAULT_MAX_POPULATION = 5
+DEFAULT_MAX_POPULATION = 4
+BLACKSMITH_POPULATION = 5
 KEEP_MAX_POPULATION = 7
 
 FULL_ACTIONS = [
@@ -50,8 +51,12 @@ FULL_ACTIONS = [
     'steel_blade',
     'long_barrelled_gun',
     'keep',
+    'watchtower',
+    'monastery',
+    'transport',
     'footman',
     'rifleman',
+    'monk',
     'forward',
     'backward',
     'repair',
@@ -59,13 +64,9 @@ FULL_ACTIONS = [
 ]
 
 SIMPLE_ACTIONS = [
-    'null',
-    'close',
-    'barrack',
-    'blacksmith',
-    'footman',
-    'rifleman',
-    'forward',
+    action
+    for action in FULL_ACTIONS
+    if action not in ['backward', 'stop_repair']
 ]
 
 SIMPLE_TECHS = {
@@ -123,6 +124,33 @@ SIMPLE_TECHS = {
         'built': False,
         'building': False,
     },
+    'watchtower': {
+        'name': 'Watchtower',
+        'require': ['blacksmith'],
+        'time_cost': 490,
+        'count_down': 490,
+        'gold_cost': 160,
+        'built': False,
+        'building': False,
+    },
+    'monastery': {
+        'name': 'Monastery',
+        'require': ['keep'],
+        'time_cost': 360,
+        'count_down': 360,
+        'gold_cost': 210,
+        'built': False,
+        'building': False,
+    },
+    'transport': {
+        'name': 'Transport',
+        'require': ['keep'],
+        'time_cost': 580,
+        'count_down': 580,
+        'gold_cost': 260,
+        'built': False,
+        'building': False,
+    },
 }
 
 TECHS = {
@@ -145,8 +173,8 @@ TECHS = {
         'built': False,
         'building': False,
     },
-    'watertower': {
-        'name': 'Watertower',
+    'watchtower': {
+        'name': 'Watchtower',
         'require': ['blacksmith'],
         'built': False,
         'building': False,
@@ -175,8 +203,8 @@ TECHS = {
         'built': False,
         'building': False,
     },
-    'monatery': {
-        'name': 'Monatery',
+    'monastery': {
+        'name': 'Monastery',
         'require': ['keep'],
         'built': False,
         'building': False,
@@ -195,7 +223,7 @@ TECHS = {
     },
     'telescope': {
         'name': 'Telescope',
-        'require': ['keep', 'watertower'],
+        'require': ['keep', 'watchtower'],
         'built': False,
         'building': False,
     },
@@ -225,7 +253,7 @@ TECHS = {
     },
     'noble_metal': {
         'name': 'Noble Metal',
-        'require': ['monatery', 'castle'],
+        'require': ['monastery', 'castle'],
         'built': False,
         'building': False,
     },
@@ -246,6 +274,14 @@ UNITS = {
         'gold_cost': 90,
         'time_cost': 250,
         'count_down': 250,
+        'building': False,
+    },
+    'monk': {
+        'name': 'Monk',
+        'require': ['monastery'],
+        'gold_cost': 80,
+        'time_cost': 275,
+        'count_down': 275,
         'building': False,
     },
 }
@@ -299,6 +335,20 @@ class Base:
                 self.repairing = False
 
 
+class Watchtower:
+    def __init__(self):
+        self.damage = 18.0
+        self.attack_range = LANE_LENGTH / 3
+        self.interval = 20
+        self.cool_down = 0
+
+    def ready(self, dist):
+        return dist <= self.attack_range and self.cool_down == 0
+
+    def attack(self):
+        return random.uniform(self.damage, self.damage + 12)
+
+
 class Unit:
     def __init__(self, *args, **kwargs):
         for d in args:
@@ -316,6 +366,8 @@ class Unit:
 
         self.cool_down = 0
         self.dead = False
+
+        self.healable = False
 
     @property
     def fmt_direction(self):
@@ -383,7 +435,32 @@ class Rifleman(Unit):
         return random.uniform(self.damage, 2 * self.damage)
 
 
-UNIT_TEMPLATE = {'footman': Footman, 'rifleman': Rifleman}
+class Monk(Unit):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.max_health = 120.0
+        self.health = self.max_health
+
+        self.min_distance = 0.0
+        self.distance = self.min_distance
+
+        self.speed = 1.3 + random.random() / 5
+
+        self.attack_range = 20.0
+        self.heal = 15
+        self.damage = 7
+        # self.attack_animation = 2
+        # self.attack_backswing = 2
+        self.interval = 17
+
+        self.healable = True
+
+    def attack(self):
+        return random.uniform(self.damage, 2 * self.damage)
+
+
+UNIT_TEMPLATE = {'footman': Footman, 'rifleman': Rifleman, 'monk': Monk}
 
 VIZ = {
     'not': (255, 0, 1),

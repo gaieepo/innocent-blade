@@ -35,10 +35,18 @@ def human_agent():
                 action = 'long_barrelled_gun'
             elif event.key == pygame.K_6:
                 action = 'keep'
+            elif event.key == pygame.K_7:
+                action = 'watchtower'
+            elif event.key == pygame.K_8:
+                action = 'monastery'
+            elif event.key == pygame.K_9:
+                action = 'transport'
             elif event.key == pygame.K_z:
                 action = 'footman'
             elif event.key == pygame.K_x:
                 action = 'rifleman'
+            elif event.key == pygame.K_c:
+                action = 'monk'
             elif event.key == pygame.K_SPACE:
                 action = 'forward'
             elif event.key == pygame.K_BACKSPACE:

@@ -4,11 +4,13 @@ import sys
 import numpy as np
 import pygame
 
-from utils import (DEFAULT_MAX_POPULATION, FPS, FULL_ACTIONS, GOLD_SPEED,
-                   HEIGHT, INITIAL_GOLD, KEEP_MAX_POPULATION, LANE_LENGTH,
-                   PREPRO_DAMAGE, PREPRO_GOLD, PREPRO_TIME, SIMPLE_ACTIONS,
-                   SIMPLE_TECHS, UNIT_TEMPLATE, UNITS, VIZ, WIDTH,
-                   WINDMILL_GOLD_SPEED, Base, Footman, Rifleman)
+from utils import (BLACKSMITH_POPULATION, DEFAULT_MAX_POPULATION, FPS,
+                   FULL_ACTIONS, GOLD_SPEED, HEIGHT, INITIAL_GOLD,
+                   KEEP_MAX_POPULATION, LANE_LENGTH, PREPRO_DAMAGE,
+                   PREPRO_GOLD, PREPRO_TIME, SIMPLE_ACTIONS, SIMPLE_TECHS,
+                   TRANSPORT_GOLD_SPEED, UNIT_TEMPLATE, UNITS, VIZ, WIDTH,
+                   WINDMILL_GOLD_SPEED, Base, Footman, Monk, Rifleman,
+                   Watchtower)
 
 
 class Faction:
@@ -22,6 +24,7 @@ class Faction:
         self.gold_speed = GOLD_SPEED
 
         self.base = Base(self)
+        self.watchtower = None
 
         self.max_population = DEFAULT_MAX_POPULATION
         self.population = 0
@@ -124,8 +127,14 @@ class Faction:
                 if v['count_down'] == 0:
                     v['built'] = True
                     v['building'] = False
-                    if k == 'keep':
+
+                    # update population and watchtower
+                    if k == 'blacksmith':
+                        self.max_population = BLACKSMITH_POPULATION
+                    elif k == 'keep':
                         self.max_population = KEEP_MAX_POPULATION
+                    elif k == 'watchtower':
+                        self.watchtower = Watchtower()
 
     def _unit_count_down(self):
         for k, v in self.units.items():
@@ -140,6 +149,8 @@ class Faction:
     def _gold_update(self):
         if self.techs['windmill']['built']:
             self.gold_speed = WINDMILL_GOLD_SPEED
+        if self.techs['transport']['built']:
+            self.gold_speed = TRANSPORT_GOLD_SPEED
 
         self.gold += self.gold_speed - self.base.repairing * Base.REPAIR_COST
 
@@ -417,6 +428,19 @@ class Game:
                         (25, 50 * (unit.health / unit.max_health)),
                     ),
                 )
+            elif isinstance(unit, Monk):
+                pygame.draw.rect(
+                    self.surface,
+                    (0, 120, 120),
+                    pygame.Rect(
+                        (
+                            50.0
+                            + (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
+                            HEIGHT - 50 * (unit.health / unit.max_health),
+                        ),
+                        (25, 50 * (unit.health / unit.max_health)),
+                    ),
+                )
 
         for unit in self.black.army:
             if isinstance(unit, Footman):
@@ -437,6 +461,20 @@ class Game:
                 pygame.draw.rect(
                     self.surface,
                     (255, 255, 0),
+                    pygame.Rect(
+                        (
+                            WIDTH
+                            - 50.0
+                            - (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
+                            HEIGHT - 50 * (unit.health / unit.max_health),
+                        ),
+                        (25, 50 * (unit.health / unit.max_health)),
+                    ),
+                )
+            elif isinstance(unit, Monk):
+                pygame.draw.rect(
+                    self.surface,
+                    (0, 120, 120),
                     pygame.Rect(
                         (
                             WIDTH
@@ -531,6 +569,18 @@ class Game:
 
         # damage and health calculation
         for unit in self.white.army:
+            if unit.healable:
+                fr, un = self.white._frontier()
+                target_distance = fr - unit.distance  # assured not base
+
+                if unit.ready(target_distance) and un.health < (
+                    un.max_health - unit.heal
+                ):
+                    un.health = min(un.max_health, un.health + unit.heal)
+
+                    # heal then do not attack
+                    continue
+
             fr, un = self.black._frontier()
             target_distance = LANE_LENGTH - fr - unit.distance
 
@@ -552,7 +602,37 @@ class Game:
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
                 # TODO hit and run
 
+        # white watchtower
+        if self.white.watchtower is not None:
+            white_watchtower = self.white.watchtower
+            fr, un = self.black._frontier()
+            target_distance = LANE_LENGTH - fr
+
+            if white_watchtower.ready(target_distance):
+                un.health -= white_watchtower.attack()
+
+                if un.health <= 0:
+                    # assured not base
+                    un.dead = True
+                    self.black.population -= 1
+
+                white_watchtower.cool_down = (
+                    white_watchtower.cool_down + 1
+                ) % white_watchtower.interval
+
         for unit in self.black.army:
+            if unit.healable:
+                fr, un = self.black._frontier()
+                target_distance = fr - unit.distance  # assured not base
+
+                if unit.ready(target_distance) and un.health < (
+                    un.max_health - unit.heal
+                ):
+                    un.health = min(un.max_health, un.health + unit.heal)
+
+                    # heal then do not attack
+                    continue
+
             fr, un = self.white._frontier()
             target_distance = LANE_LENGTH - fr - unit.distance
 
@@ -573,6 +653,24 @@ class Game:
             elif target_distance <= unit.attack_range and unit.cool_down > 0:
                 unit.cool_down = (unit.cool_down + 1) % unit.interval
                 # TODO hit and run
+
+        # black watchtower
+        if self.black.watchtower is not None:
+            black_watchtower = self.black.watchtower
+            fr, un = self.white._frontier()
+            target_distance = LANE_LENGTH - fr
+
+            if black_watchtower.ready(target_distance):
+                un.health -= black_watchtower.attack()
+
+                if un.health <= 0:
+                    # assured not base
+                    un.dead = True
+                    self.white.population -= 1
+
+                black_watchtower.cool_down = (
+                    black_watchtower.cool_down + 1
+                ) % black_watchtower.interval
 
         # remove dead units
         for unit in self.white.army:
