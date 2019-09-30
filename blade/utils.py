@@ -288,7 +288,7 @@ UNITS = {
 
 
 class Base:
-    HEALTH = [1600.0, 2200.0, 2800.0]
+    HEALTH = [1600.0, 2200.0, 4000.0]
     REPAIR_COST = 0.25
     REPAIR_SPEED = 0.4
 
@@ -451,7 +451,7 @@ class Monk(Unit):
         self.damage = 7
         # self.attack_animation = 2
         # self.attack_backswing = 2
-        self.interval = 30
+        self.interval = 40
 
         self.healable = True
 
