@@ -446,12 +446,12 @@ class Monk(Unit):
 
         self.speed = 1.3 + random.random() / 5
 
-        self.attack_range = 20.0
+        self.attack_range = 30.0
         self.heal = 15
         self.damage = 7
         # self.attack_animation = 2
         # self.attack_backswing = 2
-        self.interval = 14
+        self.interval = 30
 
         self.healable = True
 

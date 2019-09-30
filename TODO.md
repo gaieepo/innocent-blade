@@ -7,4 +7,4 @@
 7. value and policy net (PPO)
 8. record and replay
 9. floating point assurance
-10. monk should do round robin heal and move accordingly
+10. monk should do round robin heal (done but different from flash version)

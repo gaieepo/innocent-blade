@@ -603,23 +603,31 @@ class Game:
         for unit in self.white.army:
             # heal logic
             if unit.healable:
-                # iterate all units in own army
-                # for un in sorted(
-                #     self.white.army, key=lambda x: x.distance, reverse=True
-                # ):
-                #     pass
-
-                fr, un = self.white._frontier()
-                target_distance = fr - unit.distance  # assured not base
-
-                if unit.ready(target_distance) and un.health < (
-                    un.max_health - unit.heal
+                healed = False
+                # iterate all units in own army (still at battle front line)
+                for un in sorted(
+                    self.white.army, key=lambda x: x.distance, reverse=True
                 ):
-                    un.health = min(un.max_health, un.health + unit.heal)
+                    if un is not unit:  # does not heal self
+                        target_distance = (
+                            un.distance - unit.distance
+                        )  # not base
 
-                    # heal also cool down
-                    unit.cool_down = (unit.cool_down + 1) % unit.interval
+                        if unit.ready(target_distance) and un.health < (
+                            un.max_health - unit.heal
+                        ):
+                            un.health = min(
+                                un.max_health, un.health + unit.heal
+                            )
 
+                            # heal also cool down
+                            unit.cool_down = (
+                                unit.cool_down + 1
+                            ) % unit.interval
+                            healed = True
+                            break
+
+                if healed:
                     # heal then do not attack
                     continue
 
@@ -666,17 +674,31 @@ class Game:
         for unit in self.black.army:
             # heal logic
             if unit.healable:
-                fr, un = self.black._frontier()
-                target_distance = fr - unit.distance  # assured not base
-
-                if unit.ready(target_distance) and un.health < (
-                    un.max_health - unit.heal
+                healed = False
+                # iterate all units in own army (still at battle front line)
+                for un in sorted(
+                    self.black.army, key=lambda x: x.distance, reverse=True
                 ):
-                    un.health = min(un.max_health, un.health + unit.heal)
+                    if un is not unit:  # does not heal self
+                        target_distance = (
+                            un.distance - unit.distance
+                        )  # not base
 
-                    # heal also cool down
-                    unit.cool_down = (unit.cool_down + 1) % unit.interval
+                        if unit.ready(target_distance) and un.health < (
+                            un.max_health - unit.heal
+                        ):
+                            un.health = min(
+                                un.max_health, un.health + unit.heal
+                            )
 
+                            # heal also cool down
+                            unit.cool_down = (
+                                unit.cool_down + 1
+                            ) % unit.interval
+                            healed = True
+                            break
+
+                if healed:
                     # heal then do not attack
                     continue
 
