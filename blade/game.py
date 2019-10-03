@@ -549,7 +549,9 @@ class Game:
                 elif side == 'black':
                     self.black.faction_step(action)
             else:
-                print(f'invalid {side} action {action}: unknown action')
+                raise NotImplementedError(
+                    f'invalid {side} action {action}: unknown action'
+                )
 
     def _global_movement(self):
         for unit in self.white.army:
