@@ -7,10 +7,10 @@ import pygame
 from utils import (BLACKSMITH_POPULATION_INCREMENT, DEFAULT_MAX_POPULATION,
                    FPS, FULL_ACTIONS, FULL_MAX_POPULATION, GOLD_SPEED, HEIGHT,
                    INITIAL_GOLD, KEEP_POPULATION_INCREMENT, LANE_LENGTH,
-                   PREPRO_DAMAGE, PREPRO_GOLD, PREPRO_TIME, SIMPLE_ACTIONS,
-                   SIMPLE_TECHS, TRANSPORT_GOLD_SPEED, UNIT_TEMPLATE, UNITS,
-                   VIZ, WIDTH, WINDMILL_GOLD_SPEED, Base, Footman, Monk,
-                   Rifleman, Watchtower)
+                   PREPRO_DAMAGE, PREPRO_GOLD, PREPRO_TIME, SEED,
+                   SIMPLE_ACTIONS, SIMPLE_TECHS, TRANSPORT_GOLD_SPEED,
+                   UNIT_TEMPLATE, UNITS, VIZ, WIDTH, WINDMILL_GOLD_SPEED, Base,
+                   Footman, Monk, Rifleman, Watchtower)
 
 
 class Faction:
@@ -237,6 +237,13 @@ class Game:
         self.timer = 0
         self.debug = debug
         self.fps = FPS
+
+    def seed(self, seed=None):
+        if seed is None:
+            seed = SEED
+
+        random.seed(SEED)
+        np.random.seed(SEED)
 
     @property
     def available_actions(self):
