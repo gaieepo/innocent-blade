@@ -18,9 +18,9 @@ def generate_id():
 
 
 # prepro
-PREPRO_GOLD = 1000.0
+PREPRO_GOLD = 2000.0
 PREPRO_TIME = 1000.0
-PREPRO_DAMAGE = 50.0
+PREPRO_DAMAGE = 500.0
 
 # game related
 WHITE = 0
@@ -286,6 +286,8 @@ UNITS = {
     },
 }
 
+UNIT_INDEX = {'Footman': 0, 'Rifleman': 1, 'Monk': 2}
+
 
 class Base:
     HEALTH = [1600.0, 2200.0, 4000.0]
@@ -367,6 +369,9 @@ class Unit:
 
         self.cool_down = 0
         self.dead = False
+
+        self.damage = 0
+        self.heal = 0
 
         self.healable = False
 
