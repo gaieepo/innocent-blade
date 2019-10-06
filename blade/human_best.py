@@ -170,13 +170,13 @@ if __name__ == "__main__":
             if white_action == 'close':
                 game.close()
             elif white_action == 'up_fps':
-                game.set_fps(step=5)
+                game.viewer.set_fps(step=5)
                 white_action = 'null'
             elif white_action == 'down_fps':
-                game.set_fps(step=-5)
+                game.viewer.set_fps(step=-5)
                 white_action = 'null'
             elif white_action == 'reset_fps':
-                game.set_fps()
+                game.viewer.set_fps()
                 white_action = 'null'
 
             # update env

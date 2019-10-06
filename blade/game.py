@@ -4,6 +4,7 @@ import sys
 import numpy as np
 import pygame
 
+import rendering
 from utils import (BLACKSMITH_POPULATION_INCREMENT, DEFAULT_MAX_POPULATION,
                    FPS, FULL_ACTIONS, FULL_MAX_POPULATION, GOLD_SPEED, HEIGHT,
                    INITIAL_GOLD, KEEP_POPULATION_INCREMENT, LANE_LENGTH,
@@ -225,7 +226,7 @@ class Faction:
 
 class Game:
     def __init__(self, simple=False, debug=False):
-        self.screen = None
+        self.viewer = None
         self.white = Faction('white')
         self.black = Faction('black')
 
@@ -350,187 +351,15 @@ class Game:
     def render(
         self, mode='human', close=False, white_action=None, black_action=None
     ):
-        if self.screen is None:
-            pygame.init()
-            pygame.display.set_caption('The Blade of Innocence')
-            self.clock = pygame.time.Clock()
-            self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
-            self.surface = pygame.Surface(self.screen.get_size())
+        if self.viewer is None:
+            self.viewer = rendering.Viewer('The Blade of Innocence')
 
             self.white.render = True
             self.black.render = True
 
-        self.surface.fill((255, 255, 255))
-
-        font = pygame.font.Font(None, 24)
-        white_text = font.render('White', 1, (10, 10, 10))
-        self.surface.blit(white_text, white_text.get_rect())
-
-        black_text = font.render('Black', 1, (10, 10, 10))
-        black_textpos = black_text.get_rect()
-        black_textpos.right = WIDTH
-        self.surface.blit(black_text, black_textpos)
-
-        fps_text = font.render(str(int(self.clock.get_fps())), 1, (10, 10, 10))
-        fps_textpos = fps_text.get_rect()
-        fps_textpos.midtop = (WIDTH / 2, 0)
-        self.surface.blit(fps_text, fps_textpos)
-
-        # render state text
-        # (optional) render action
-        if white_action is not None and black_action is not None:
-            self.white.render_state['action'] = white_action
-            self.black.render_state['action'] = black_action
-
-        white_offset = 50
-
-        for k, v in self.white.render_state.items():
-            if k != 'army':
-                if v in VIZ:
-                    k_text = font.render(f'{k}', 1, VIZ[v])
-                elif k == 'base':
-                    white_base_health_ratio = np.clip(
-                        self.white.base.health / self.white.base.max_health,
-                        0,
-                        1,
-                    )
-                    k_text = font.render(
-                        f'{k}: {v}',
-                        1,
-                        (
-                            255 * (1 - white_base_health_ratio),
-                            255 * white_base_health_ratio,
-                            0,
-                        ),
-                    )
-                else:
-                    k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
-                k_textpos = k_text.get_rect()
-                k_textpos.top = white_offset
-                self.surface.blit(k_text, k_textpos)
-                white_offset += 20
-
-        black_offset = 50
-
-        for k, v in self.black.render_state.items():
-            if k != 'army':
-                if v in VIZ:
-                    k_text = font.render(f'{k}', 1, VIZ[v])
-                elif k == 'base':
-                    black_base_health_ratio = np.clip(
-                        self.black.base.health / self.black.base.max_health,
-                        0,
-                        1,
-                    )
-                    k_text = font.render(
-                        f'{k}: {v}',
-                        1,
-                        (
-                            255 * (1 - black_base_health_ratio),
-                            255 * black_base_health_ratio,
-                            0,
-                        ),
-                    )
-                else:
-                    k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
-                k_textpos = k_text.get_rect()
-                k_textpos.right = WIDTH
-                k_textpos.top = black_offset
-                self.surface.blit(k_text, k_textpos)
-                black_offset += 20
-
-        # render comic army
-        for unit in self.white.army:
-            if isinstance(unit, Footman):
-                pygame.draw.rect(
-                    self.surface,
-                    (0, 255, 0),
-                    pygame.Rect(
-                        (
-                            50.0
-                            + (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
-                            HEIGHT - 30 * (unit.health / unit.max_health),
-                        ),
-                        (20, 30 * (unit.health / unit.max_health)),
-                    ),
-                )
-            elif isinstance(unit, Rifleman):
-                pygame.draw.rect(
-                    self.surface,
-                    (0, 255, 255),
-                    pygame.Rect(
-                        (
-                            50.0
-                            + (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
-                            HEIGHT - 50 * (unit.health / unit.max_health),
-                        ),
-                        (25, 50 * (unit.health / unit.max_health)),
-                    ),
-                )
-            elif isinstance(unit, Monk):
-                pygame.draw.rect(
-                    self.surface,
-                    (0, 120, 120),
-                    pygame.Rect(
-                        (
-                            50.0
-                            + (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
-                            HEIGHT - 50 * (unit.health / unit.max_health),
-                        ),
-                        (25, 50 * (unit.health / unit.max_health)),
-                    ),
-                )
-
-        for unit in self.black.army:
-            if isinstance(unit, Footman):
-                pygame.draw.rect(
-                    self.surface,
-                    (255, 0, 0),
-                    pygame.Rect(
-                        (
-                            WIDTH
-                            - 50.0
-                            - (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
-                            HEIGHT - 30 * (unit.health / unit.max_health),
-                        ),
-                        (20, 30 * (unit.health / unit.max_health)),
-                    ),
-                )
-            elif isinstance(unit, Rifleman):
-                pygame.draw.rect(
-                    self.surface,
-                    (255, 255, 0),
-                    pygame.Rect(
-                        (
-                            WIDTH
-                            - 50.0
-                            - (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
-                            HEIGHT - 50 * (unit.health / unit.max_health),
-                        ),
-                        (25, 50 * (unit.health / unit.max_health)),
-                    ),
-                )
-            elif isinstance(unit, Monk):
-                pygame.draw.rect(
-                    self.surface,
-                    (0, 120, 120),
-                    pygame.Rect(
-                        (
-                            WIDTH
-                            - 50.0
-                            - (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
-                            HEIGHT - 50 * (unit.health / unit.max_health),
-                        ),
-                        (25, 50 * (unit.health / unit.max_health)),
-                    ),
-                )
-
-        self.screen.blit(self.surface, (0, 0))
-
-        if mode == 'human':
-            pygame.display.flip()
-
-        self.clock.tick(self.fps)
+        self.viewer.render(
+            self, white_action=white_action, black_action=black_action
+        )
 
     def _global_action(self, white_action, black_action):
         for side, action in (('white', white_action), ('black', black_action)):
@@ -791,15 +620,8 @@ class Game:
         return state, reward, done, info
 
     def close(self, close_all=True):
-        if self.screen is not None:
-            pygame.quit()
+        if self.viewer is not None:
+            self.viewer.close()
 
         if close_all:
             sys.exit()
-
-    def set_fps(self, step=None):
-        if step is None:
-            # reset
-            self.fps = FPS
-        else:
-            self.fps = np.clip(self.fps + step, 5, 120)
