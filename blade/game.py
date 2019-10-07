@@ -47,7 +47,7 @@ class Faction:
         self.army = []
 
         if debug:
-            self.gold = 99999
+            self.gold = 9999
 
     def _all_require_satisfied(self, reqs):
         rv = True

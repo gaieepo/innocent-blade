@@ -114,7 +114,7 @@ class Main:
     def __init__(self):
         self.gamma = 0.99
         self.lamda = 0.95
-        self.updates = 10000
+        self.updates = 100000
         self.epochs = 4
         self.n_workers = 8
         self.worker_steps = 128
@@ -136,6 +136,9 @@ class Main:
 
         self.model = Model()
         self.model.to(device)
+        self.model.load_state_dict(torch.load('weight.pth'))
+        print('loaded weight.pth')
+        self.model.train()
         self.trainer = Trainer(self.model)
 
     def sample(self):

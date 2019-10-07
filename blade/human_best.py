@@ -19,6 +19,7 @@ if torch.cuda.is_available():
 else:
     device = torch.device('cpu')
 
+
 ###################################################
 # general agents
 ###################################################
@@ -93,11 +94,13 @@ if __name__ == "__main__":
     model = Model()
     model.to(device)
 
-    if os.path.exists('best.pth'):  # load best
-        model.load_state_dict(torch.load('best.pth'))
+    BEST_WEIGHT = 'weight.pth'
+
+    if os.path.exists(BEST_WEIGHT):  # load best
+        model.load_state_dict(torch.load(BEST_WEIGHT))
         print('Best weights loaded!!!')
     else:
-        raise FileNotFoundError('best.pth is not found')
+        raise FileNotFoundError(f'{BEST_WEIGHT} is not found')
 
     # set policy untrainable
     model.eval()
