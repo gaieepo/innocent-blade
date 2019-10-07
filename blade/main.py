@@ -1,5 +1,6 @@
 import multiprocessing
 import multiprocessing.connection
+import os
 import random
 import time
 from collections import deque
@@ -8,8 +9,8 @@ import numpy as np
 import torch
 import torch.optim as optim
 
-from utils import SIMPLE_ACTIONS, WHITE
 from models import Model, obs_to_torch
+from utils import SIMPLE_ACTIONS, WHITE
 from wrapper import GameWrapper
 
 if torch.cuda.is_available():
@@ -136,8 +137,9 @@ class Main:
 
         self.model = Model()
         self.model.to(device)
-        self.model.load_state_dict(torch.load('weight.pth'))
-        print('loaded weight.pth')
+        if os.path.exists('weight.pth'):
+            self.model.load_state_dict(torch.load('weight.pth'))
+            print('loaded weight.pth')
         self.model.train()
         self.trainer = Trainer(self.model)
 
