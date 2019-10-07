@@ -412,6 +412,9 @@ class Game:
                 self.white.base.repairing,
                 self.white.base.health,
                 self.white.base.max_health,
+                self.black.base.repairing,
+                self.black.base.health,
+                self.black.base.max_health,
             ]
         )
         state['black'].extend(
@@ -421,8 +424,18 @@ class Game:
                 self.black.base.repairing,
                 self.black.base.health,
                 self.black.base.max_health,
+                self.white.base.repairing,
+                self.white.base.health,
+                self.white.base.max_health,
             ]
         )
+        for k, v in self.black.techs.items():
+            if v['visible']:
+                state['white'].append(v['built'])
+
+        for k, v in self.white.techs.items():
+            if v['visible']:
+                state['black'].append(v['built'])
 
         # format
         state['white'] = np.array(state['white']).astype(np.float).ravel()

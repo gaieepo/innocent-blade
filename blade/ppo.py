@@ -132,7 +132,6 @@ class Model(nn.Module):
         h = F.relu(self.conv2(h))
         h = F.relu(self.conv3(h))
         h = h.reshape((-1, 7 * 7 * 64))
-
         h = F.relu(self.lin(h))
 
         pi = Categorical(logits=self.pi_logits(h))  # logits instead of probs

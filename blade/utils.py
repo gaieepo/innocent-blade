@@ -36,7 +36,7 @@ WINDMILL_GOLD_SPEED = 0.6
 TRANSPORT_GOLD_SPEED = 0.9
 ALCHEMY_GOLD_SPEED = 1.3
 
-LANE_LENGTH = 100.0
+LANE_LENGTH = 300.0
 
 FULL_MAX_POPULATION = 7
 DEFAULT_MAX_POPULATION = 4
@@ -72,6 +72,7 @@ SIMPLE_ACTIONS = [
 SIMPLE_TECHS = {
     'barrack': {
         'name': 'Barrack',
+        'visible': True,
         'require': [],
         'time_cost': 230,
         'count_down': 230,
@@ -81,6 +82,7 @@ SIMPLE_TECHS = {
     },
     'blacksmith': {
         'name': 'Blacksmith',
+        'visible': True,
         'require': [],
         'time_cost': 400,
         'count_down': 400,
@@ -90,6 +92,7 @@ SIMPLE_TECHS = {
     },
     'windmill': {
         'name': 'Windmill',
+        'visible': True,
         'require': [],
         'time_cost': 560,
         'count_down': 560,
@@ -99,6 +102,7 @@ SIMPLE_TECHS = {
     },
     'steel_blade': {
         'name': 'Steel Blade',
+        'visible': False,
         'require': ['blacksmith'],
         'time_cost': 450,
         'count_down': 450,
@@ -108,6 +112,7 @@ SIMPLE_TECHS = {
     },
     'long_barrelled_gun': {
         'name': 'Long-barrelled Gun',
+        'visible': False,
         'require': ['blacksmith'],
         'time_cost': 580,
         'count_down': 580,
@@ -117,6 +122,7 @@ SIMPLE_TECHS = {
     },
     'keep': {
         'name': 'Keep',
+        'visible': True,
         'require': [],
         'time_cost': 600,
         'count_down': 600,
@@ -126,6 +132,7 @@ SIMPLE_TECHS = {
     },
     'watchtower': {
         'name': 'Watchtower',
+        'visible': True,
         'require': ['blacksmith'],
         'time_cost': 490,
         'count_down': 490,
@@ -135,6 +142,7 @@ SIMPLE_TECHS = {
     },
     'monastery': {
         'name': 'Monastery',
+        'visible': True,
         'require': ['keep'],
         'time_cost': 360,
         'count_down': 360,
@@ -144,6 +152,7 @@ SIMPLE_TECHS = {
     },
     'transport': {
         'name': 'Transport',
+        'visible': False,
         'require': ['keep'],
         'time_cost': 580,
         'count_down': 580,

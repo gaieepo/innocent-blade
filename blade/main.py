@@ -127,7 +127,7 @@ class Main:
 
         self.workers = [Worker(42 + i) for i in range(self.n_workers)]
 
-        self.obs = np.zeros((self.n_workers, 8 * 199), dtype=np.uint8)
+        self.obs = np.zeros((self.n_workers, 8 * 208), dtype=np.uint8)
 
         for worker in self.workers:
             worker.child.send(('reset', None))
@@ -148,7 +148,7 @@ class Main:
         actions = np.zeros((self.n_workers, self.worker_steps), dtype=np.int32)
         dones = np.zeros((self.n_workers, self.worker_steps), dtype=np.bool)
         obs = np.zeros(
-            (self.n_workers, self.worker_steps, 8 * 199), dtype=np.uint8
+            (self.n_workers, self.worker_steps, 8 * 208), dtype=np.uint8
         )
         neg_log_pis = np.zeros(
             (self.n_workers, self.worker_steps), dtype=np.float32

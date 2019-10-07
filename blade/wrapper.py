@@ -8,8 +8,8 @@ class GameWrapper:
     def __init__(self, seed=None, debug=False):
         self.env = Game(debug=debug)
         self.env.seed(seed)
-        self.obs_white_8 = np.zeros((8, 199))
-        self.obs_black_8 = np.zeros((8, 199))
+        self.obs_white_8 = np.zeros((8, 208))
+        self.obs_black_8 = np.zeros((8, 208))
         self.rewards_white = []
         self.rewards_black = []
 
