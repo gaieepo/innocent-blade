@@ -33,3 +33,10 @@ class Model(nn.Module):
 
 def obs_to_torch(obs):
     return torch.tensor(obs, dtype=torch.float32, device=device)
+
+
+def weights_init(m):
+    """ zero everything, looks neat """
+    if isinstance(m, nn.Linear):
+        m.weight.data.zero_()
+        m.bias.data.zero_()

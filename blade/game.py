@@ -705,7 +705,7 @@ class Game:
         elif isinstance(action, (int, np.integer)):
             return self.actions[action]
         else:
-            raise ValueError(f'unknown action type: {type(action)}')
+            raise ValueError(f'unknown action type "{action}": {type(action)}')
 
     def step(self, white_action, black_action):
         white_action = self._parse_action(white_action)

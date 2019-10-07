@@ -9,7 +9,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 
-from models import Model, obs_to_torch
+from models import Model, obs_to_torch, weights_init
 from utils import SIMPLE_ACTIONS, WHITE
 from wrapper import GameWrapper
 
@@ -128,19 +128,32 @@ class Main:
 
         self.workers = [Worker(42 + i) for i in range(self.n_workers)]
 
-        self.obs = np.zeros((self.n_workers, 8 * 208), dtype=np.uint8)
+        self.obs_white = np.zeros((self.n_workers, 8 * 208), dtype=np.float32)
+        self.obs_black = np.zeros((self.n_workers, 8 * 208), dtype=np.float32)
 
         for worker in self.workers:
             worker.child.send(('reset', None))
         for i, worker in enumerate(self.workers):
-            self.obs[i], _ = worker.child.recv()
+            self.obs_white[i], self.obs_black[i] = worker.child.recv()
 
         self.model = Model()
+        self.curr_best = Model()
+
         self.model.to(device)
-        if os.path.exists('weight.pth'):
-            self.model.load_state_dict(torch.load('weight.pth'))
-            print('loaded weight.pth')
+        self.curr_best.to(device)
+
+        if os.path.exists('best.pth'):
+            self.model.load_state_dict(torch.load('best.pth'))
+            self.curr_best.load_state_dict(torch.load('best.pth'))
+            print('loaded best.pth')
+        else:
+            self.model.apply(weights_init)
+            self.curr_best.apply(weights_init)
+            print('zero-ed out')
+
         self.model.train()
+        self.curr_best.eval()
+
         self.trainer = Trainer(self.model)
 
     def sample(self):
@@ -150,7 +163,7 @@ class Main:
         actions = np.zeros((self.n_workers, self.worker_steps), dtype=np.int32)
         dones = np.zeros((self.n_workers, self.worker_steps), dtype=np.bool)
         obs = np.zeros(
-            (self.n_workers, self.worker_steps, 8 * 208), dtype=np.uint8
+            (self.n_workers, self.worker_steps, 8 * 208), dtype=np.float32
         )
         neg_log_pis = np.zeros(
             (self.n_workers, self.worker_steps), dtype=np.float32
@@ -161,24 +174,26 @@ class Main:
         episode_infos = []
 
         for t in range(self.worker_steps):
-            obs[:, t] = self.obs
+            obs[:, t] = self.obs_white
 
-            pi, v = self.model(obs_to_torch(self.obs))
+            pi, v = self.model(obs_to_torch(self.obs_white))
             values[:, t] = v.cpu().data.numpy()
-
             a = pi.sample()
             actions[:, t] = a.cpu().data.numpy()
+
+            pi_black, v_black = self.curr_best(obs_to_torch(self.obs_black))
+            a_black = pi_black.sample()
 
             neg_log_pis[:, t] = -pi.log_prob(a).cpu().data.numpy()
 
             for w, worker in enumerate(self.workers):
                 worker.child.send(
-                    ('step', [actions[w, t], random.choice(SIMPLE_ACTIONS)])
+                    ('step', [actions[w, t], a_black[w].item()])
                 )
 
             for w, worker in enumerate(self.workers):
                 white_obs, _, reward, done, info = worker.child.recv()
-                self.obs[w] = white_obs
+                self.obs_white[w] = white_obs
                 rewards[w, t] = reward[WHITE]
                 dones[w, t] = done
 
@@ -211,7 +226,7 @@ class Main:
         )
         last_advantage = 0
 
-        _, last_value = self.model(obs_to_torch(self.obs))
+        _, last_value = self.model(obs_to_torch(self.obs_white))
         last_value = last_value.cpu().data.numpy()
 
         for t in reversed(range(self.worker_steps)):
@@ -277,7 +292,7 @@ class Main:
 
             # save latest model
             if update % 100 == 0:
-                torch.save(self.model.state_dict(), 'weight.pth')
+                torch.save(self.model.state_dict(), 'best.pth')
 
     @staticmethod
     def _get_mean_episode_info(episode_info):

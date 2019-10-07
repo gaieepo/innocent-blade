@@ -94,7 +94,7 @@ if __name__ == "__main__":
     model = Model()
     model.to(device)
 
-    BEST_WEIGHT = 'weight.pth'
+    BEST_WEIGHT = 'best.pth'
 
     if os.path.exists(BEST_WEIGHT):  # load best
         model.load_state_dict(torch.load(BEST_WEIGHT))
