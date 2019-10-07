@@ -443,6 +443,9 @@ class Game:
     def render(
         self, mode='human', close=False, white_action=None, black_action=None
     ):
+        white_action = self._parse_action(white_action)
+        black_action = self._parse_action(black_action)
+
         if self.viewer is None:
             self.viewer = rendering.Viewer('The Blade of Innocence')
 
@@ -683,7 +686,18 @@ class Game:
 
         return end_status
 
+    def _parse_action(self, action):
+        if isinstance(action, str):
+            return action
+        elif isinstance(action, (int, np.integer)):
+            return self.actions[action]
+        else:
+            raise ValueError(f'unknown action type: {type(action)}')
+
     def step(self, white_action, black_action):
+        white_action = self._parse_action(white_action)
+        black_action = self._parse_action(black_action)
+
         self.timer += 1
         reward = (0, 0)  # 0 for most cases because not scored at the moment
         done = False
