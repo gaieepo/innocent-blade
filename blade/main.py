@@ -115,9 +115,9 @@ class Main:
     def __init__(self):
         self.gamma = 0.99
         self.lamda = 0.95
-        self.updates = 100000
+        self.updates = 10000
         self.epochs = 4
-        self.n_workers = 8
+        self.n_workers = 16
         self.worker_steps = 128
         self.n_mini_batch = 4
         self.batch_size = self.n_workers * self.worker_steps  # 8 * 128 = 1024
@@ -187,9 +187,7 @@ class Main:
             neg_log_pis[:, t] = -pi.log_prob(a).cpu().data.numpy()
 
             for w, worker in enumerate(self.workers):
-                worker.child.send(
-                    ('step', [actions[w, t], a_black[w].item()])
-                )
+                worker.child.send(('step', [actions[w, t], a_black[w].item()]))
 
             for w, worker in enumerate(self.workers):
                 white_obs, _, reward, done, info = worker.child.recv()
@@ -293,6 +291,7 @@ class Main:
             # save latest model
             if update % 100 == 0:
                 torch.save(self.model.state_dict(), 'best.pth')
+                print('saved best.pth')
 
     @staticmethod
     def _get_mean_episode_info(episode_info):
