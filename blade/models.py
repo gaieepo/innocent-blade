@@ -40,3 +40,12 @@ def weights_init(m):
     if isinstance(m, nn.Linear):
         m.weight.data.zero_()
         m.bias.data.zero_()
+
+
+if __name__ == "__main__":
+    model = Model()
+    print(model.state_dict())
+    model.apply(weights_init)
+    print(model.state_dict())
+    outs = model(torch.rand(208 * 8))
+    print(outs)

@@ -62,6 +62,8 @@ def human_agent():
                 action = 'repair'
             elif event.key == pygame.K_t:
                 action = 'stop_repair'
+            elif event.key == pygame.K_LEFT:
+                action = 'min_fps'
             elif event.key == pygame.K_RIGHT:
                 action = 'reset_fps'
             elif event.key == pygame.K_UP:
@@ -122,6 +124,9 @@ if __name__ == "__main__":
             # close game and app
             if white_action == 'close':
                 gw.close()
+            elif white_action == 'min_fps':
+                gw.set_fps(step=-1)
+                white_action = 'null'
             elif white_action == 'up_fps':
                 gw.set_fps(step=5)
                 white_action = 'null'

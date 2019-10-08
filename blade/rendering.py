@@ -197,6 +197,8 @@ class Viewer:
         if step is None:
             # reset
             self.fps = FPS
+        elif isinstance(step, (int, np.integer)) and step < 0:
+            self.fps = 5
         else:
             self.fps = np.clip(self.fps + step, 5, 120)
 
