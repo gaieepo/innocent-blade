@@ -32,7 +32,11 @@ class Viewer:
         black_textpos.right = WIDTH
         self.surface.blit(black_text, black_textpos)
 
-        fps_text = font.render(str(int(self.clock.get_fps())), 1, (10, 10, 10))
+        fps_text = font.render(
+            '%d | %d' % (int(self.clock.get_fps()), game.timer),
+            1,
+            (10, 10, 10),
+        )
         fps_textpos = fps_text.get_rect()
         fps_textpos.midtop = (WIDTH / 2, 0)
         self.surface.blit(fps_text, fps_textpos)

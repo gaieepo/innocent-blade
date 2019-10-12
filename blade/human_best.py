@@ -11,7 +11,7 @@ from torch.distributions import Categorical
 
 from game import Game
 from models import Model, obs_to_torch
-from utils import FULL_ACTIONS, WHITE
+from utils import FULL_ACTIONS, WHITE, BLACK
 from wrapper import GameWrapper
 
 if torch.cuda.is_available():
@@ -150,14 +150,14 @@ if __name__ == "__main__":
             if done:
                 if reward[WHITE] == 1:
                     white_wins += 1
-                else:
+                if reward[BLACK] == 1:
                     black_wins += 1
                 white_win_rate = white_wins / (white_wins + black_wins)
 
                 episode_number += 1
 
                 print(
-                    f'{episode_number} white: {white_wins} black: {black_wins} white rate: {100. * white_win_rate:.2f}%'
+                    f"{episode_number} white: {white_wins} black: {black_wins} white rate: {100. * white_win_rate:.2f}% length: {info['length']}"
                 )
 
                 break

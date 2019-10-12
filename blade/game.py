@@ -448,6 +448,8 @@ class Game:
         self.white.reset(debug=self.debug)
         self.black.reset(debug=False)
 
+        self.timer = 0
+
         # prepare state
         state = self._observation()
 
@@ -727,6 +729,8 @@ class Game:
 
         if end_status is not None:
             done = True
+
+            info['length'] = self.timer
 
             if end_status == 'white':
                 reward = (1, -1)

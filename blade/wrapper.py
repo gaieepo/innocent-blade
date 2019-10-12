@@ -5,18 +5,29 @@ from utils import BLACK, WHITE
 
 
 class GameWrapper:
-    def __init__(self, seed=None, debug=False):
+    def __init__(self, seed=None, debug=False, max_limit=10000):
         self.env = Game(debug=debug)
         self.env.seed(seed)
+        self.max_limit = max_limit
         self.obs_white_8 = np.zeros((8, 208))
         self.obs_black_8 = np.zeros((8, 208))
         self.rewards_white = []
         self.rewards_black = []
 
     def step(self, white_action, black_action):
+        """ apply maximum time limit for training game e.g. 10000 steps """
         obs, reward, done, info = self.env.step(white_action, black_action)
         self.rewards_white.append(reward[WHITE])
         self.rewards_black.append(reward[BLACK])
+
+        if len(self.rewards_white) >= self.max_limit:
+            # exceeds limit both lose
+            # reward is either 0 or 1, blade specific
+            self.rewards_white[-1] = -1
+            self.rewards_black[-1] = -1
+            reward = (-1, -1)
+            done = True
+
         if done:
             episode_info = {
                 'reward_white': sum(self.rewards_white),

@@ -10,7 +10,7 @@ import torch
 import torch.optim as optim
 
 from models import Model, obs_to_torch, weights_init
-from utils import SIMPLE_ACTIONS, WHITE
+from utils import CLIP_RANGE, LR, SIMPLE_ACTIONS, WHITE
 from wrapper import GameWrapper
 
 if torch.cuda.is_available():
@@ -46,7 +46,7 @@ class Worker:
 class Trainer:
     def __init__(self, model):
         self.model = model
-        self.optimizer = optim.Adam(self.model.parameters(), lr=2.5e-4)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=LR)
 
     def train(self, samples, learning_rate, clip_range):
         sampled_obs = samples['obs']
@@ -117,13 +117,11 @@ class Main:
         self.lamda = 0.95
         self.updates = 10000
         self.epochs = 4
-        self.n_workers = 16
-        self.worker_steps = 128
+        self.n_workers = 8
+        self.worker_steps = 10000
         self.n_mini_batch = 4
-        self.batch_size = self.n_workers * self.worker_steps  # 8 * 128 = 1024
-        self.mini_batch_size = (
-            self.batch_size // self.n_mini_batch
-        )  # 8 * 128 // 4 = 256
+        self.batch_size = self.n_workers * self.worker_steps
+        self.mini_batch_size = self.batch_size // self.n_mini_batch
         assert self.batch_size % self.n_mini_batch == 0
 
         self.workers = [Worker(42 + i) for i in range(self.n_workers)]
@@ -150,6 +148,8 @@ class Main:
             self.model.apply(weights_init)
             self.curr_best.apply(weights_init)
             print('zero-ed out')
+            torch.save(self.curr_best.state_dict(), 'best.pth')
+            print('saved best.pth')
 
         self.model.train()
         self.curr_best.eval()
@@ -157,34 +157,36 @@ class Main:
         self.trainer = Trainer(self.model)
 
     def sample(self):
-        rewards = np.zeros(
-            (self.n_workers, self.worker_steps), dtype=np.float32
-        )
-        actions = np.zeros((self.n_workers, self.worker_steps), dtype=np.int32)
-        dones = np.zeros((self.n_workers, self.worker_steps), dtype=np.bool)
+        # TODO white and black both can be learnt from
         obs = np.zeros(
             (self.n_workers, self.worker_steps, 8 * 208), dtype=np.float32
+        )
+        actions = np.zeros((self.n_workers, self.worker_steps), dtype=np.int32)
+        values = np.zeros(
+            (self.n_workers, self.worker_steps), dtype=np.float32
         )
         neg_log_pis = np.zeros(
             (self.n_workers, self.worker_steps), dtype=np.float32
         )
-        values = np.zeros(
+
+        rewards = np.zeros(
             (self.n_workers, self.worker_steps), dtype=np.float32
         )
+        dones = np.zeros((self.n_workers, self.worker_steps), dtype=np.bool)
+
         episode_infos = []
 
         for t in range(self.worker_steps):
             obs[:, t] = self.obs_white
 
-            pi, v = self.model(obs_to_torch(self.obs_white))
+            pi, v = self.curr_best(obs_to_torch(self.obs_white))
             values[:, t] = v.cpu().data.numpy()
             a = pi.sample()
             actions[:, t] = a.cpu().data.numpy()
+            neg_log_pis[:, t] = -pi.log_prob(a).cpu().data.numpy()
 
             pi_black, v_black = self.curr_best(obs_to_torch(self.obs_black))
             a_black = pi_black.sample()
-
-            neg_log_pis[:, t] = -pi.log_prob(a).cpu().data.numpy()
 
             for w, worker in enumerate(self.workers):
                 worker.child.send(('step', [actions[w, t], a_black[w].item()]))
@@ -210,6 +212,7 @@ class Main:
 
         samples_flat = {}
         for k, v in samples.items():
+            # TODO trim_zeros maybe
             v = v.reshape(v.shape[0] * v.shape[1], *v.shape[2:])
             if k == 'obs':
                 samples_flat[k] = obs_to_torch(v)
@@ -234,8 +237,8 @@ class Main:
 
             delta = rewards[:, t] + self.gamma * last_value - values[:, t]
             last_advantage = delta + self.gamma * self.lamda * last_advantage
-
             advantages[:, t] = last_advantage
+
             last_value = values[:, t]
 
         return advantages
@@ -271,9 +274,10 @@ class Main:
 
             # lr schedule
             progress = update / self.updates
-            learning_rate = 2.5e-4 * (1 - progress)
-            clip_range = 0.1 * (1 - progress)
+            learning_rate = LR * (1 - progress)
+            clip_range = CLIP_RANGE * (1 - progress)
 
+            # sample & train
             samples, sample_episode_info = self.sample()
             self.train(samples, learning_rate, clip_range)
 
