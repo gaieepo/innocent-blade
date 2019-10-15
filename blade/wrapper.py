@@ -26,7 +26,7 @@ class GameWrapper:
             self.rewards_white[-1] = -1
             self.rewards_black[-1] = -1
             reward = (-1, -1)
-            done = True
+            done = True  # will be resetted
 
         if done:
             episode_info = {
@@ -34,7 +34,7 @@ class GameWrapper:
                 'reward_black': sum(self.rewards_black),
                 'length': len(self.rewards_white),
             }
-            self.reset()
+            self.reset()  # reset after done
         else:
             episode_info = None
             self.obs_white_8 = np.roll(self.obs_white_8, shift=-1, axis=0)

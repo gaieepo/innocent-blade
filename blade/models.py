@@ -24,7 +24,7 @@ class Model(nn.Module):
         h = F.relu(self.fc3(h))
 
         pi = Categorical(logits=self.pi_logits(h))
-        value = self.value(h).reshape(-1)
+        value = self.value(h).reshape(-1)  # TODO tanh to squeeze [-1, 1]
 
         return pi, value
 

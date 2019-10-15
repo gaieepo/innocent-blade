@@ -189,7 +189,11 @@ class Main:
             a_black = pi_black.sample()
 
             for w, worker in enumerate(self.workers):
-                worker.child.send(('step', [actions[w, t], a_black[w].item()]))
+                # auto reset when done
+                # worker.child.send(('step', [actions[w, t], a_black[w].item()]))
+                worker.child.send(
+                    ('step', [actions[w, t], random.choice(SIMPLE_ACTIONS)])
+                )
 
             for w, worker in enumerate(self.workers):
                 white_obs, _, reward, done, info = worker.child.recv()
@@ -197,7 +201,8 @@ class Main:
                 rewards[w, t] = reward[WHITE]
                 dones[w, t] = done
 
-                if info:
+                if info:  # when episode done
+                    # might have
                     info['obs_white'] = obs[w, t]
                     episode_infos.append(info)
 
@@ -227,11 +232,13 @@ class Main:
         )
         last_advantage = 0
 
+        masks = Main._generate_mask(dones)
+
         _, last_value = self.model(obs_to_torch(self.obs_white))
         last_value = last_value.cpu().data.numpy()
 
         for t in reversed(range(self.worker_steps)):
-            mask = 1.0 - dones[:, t]
+            mask = masks[:, t]
             last_value = last_value * mask
             last_advantage = last_advantage * mask
 
@@ -307,6 +314,23 @@ class Main:
             )
         else:
             return np.nan, np.nan, np.nan
+
+    @staticmethod
+    def _generate_mask(dones):
+        rv = []
+        for row in dones:
+            last = dones.shape[1]
+            for col in row[::-1]:
+                if col:  # True
+                    rv.append(
+                        np.concatenate(
+                            [1.0 - row[0:last], np.zeros(len(row) - last)]
+                        )
+                    )
+                    break
+                else:
+                    last -= 1
+        return np.array(rv)
 
     def destroy(self):
         for worker in self.workers:
