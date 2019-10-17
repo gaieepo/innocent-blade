@@ -116,6 +116,7 @@ class Main:
     def __init__(self):
         self.gamma = 0.99
         self.lamda = 0.95
+        self.cycles = 100
         self.updates = 100
         self.matches = 100
         self.epochs = 4
@@ -332,6 +333,8 @@ class Main:
         if white_win_rate >= ELECT_THRESHOLD:
             torch.save(self.model.state_dict(), 'best.pth')
             print(f'new win rate: {white_win_rate:.2f} saved best.pth')
+        else:
+            print('new model not good enough, keep training')
 
     def run_training_loop(self):
         # calibrate model status
@@ -362,6 +365,22 @@ class Main:
             print(
                 f'{i_update:4}: fps={fps:3} reward={reward_mean:.2f} length={length_mean:.3f}'
             )
+
+    def run(self):
+        for c in self.cycles:
+            print(f'Running cycle {c:4}')
+
+            time_start = time.time()
+            m.run_training_loop()
+            time_end = time.time()
+            print(f'Cycle {c:4} training took {time_end - time_start:.2f}')
+
+            time_start = time.time()
+            m.run_matching_loop()
+            time_end = time.time()
+            print(f'Cycle {c:4} matching took {time_end - time_start:.2f}')
+
+        m.destroy()
 
     @staticmethod
     def _get_mean_episode_info(episode_info):
@@ -398,6 +417,4 @@ class Main:
 
 if __name__ == "__main__":
     m = Main()
-    m.run_training_loop()
-    m.run_matching_loop()
-    m.destroy()
+    m.run()
