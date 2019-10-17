@@ -367,7 +367,7 @@ class Main:
             )
 
     def run(self):
-        for c in self.cycles:
+        for c in range(self.cycles):
             print(f'Running cycle {c:4}')
 
             time_start = time.time()
