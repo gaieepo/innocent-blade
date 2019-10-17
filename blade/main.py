@@ -117,7 +117,7 @@ class Main:
         self.gamma = 0.99
         self.lamda = 0.95
         self.cycles = 100
-        self.updates = 100
+        self.updates = 1000
         self.matches = 100
         self.epochs = 4
         self.n_workers = 8
