@@ -13,6 +13,7 @@ GAMMA = 0.99
 LR = 2.5e-4
 CLIP_RANGE = 0.1
 EPS = np.finfo(np.float32).eps.item()
+ELECT_THRESHOLD = 0.6
 
 
 def generate_id():

@@ -32,7 +32,10 @@ class Model(nn.Module):
 
 
 def obs_to_torch(obs):
-    return torch.tensor(obs, dtype=torch.float32, device=device)
+    res = torch.tensor(obs, dtype=torch.float32, device=device)
+    if len(obs.shape) == 1:
+        return res.unsqueeze(0)
+    return res
 
 
 def weights_init(m):

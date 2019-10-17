@@ -8,4 +8,5 @@
 8. record and replay
 9. floating point assurance
 10. monk should do round robin heal (done but different from flash version)
-11. timer is needed in observable state
+11. timer is needed in observable state (done)
+12. game wise random state

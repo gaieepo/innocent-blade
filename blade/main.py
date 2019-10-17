@@ -10,7 +10,8 @@ import torch
 import torch.optim as optim
 
 from models import Model, obs_to_torch, weights_init
-from utils import CLIP_RANGE, LR, SIMPLE_ACTIONS, STATE_SIZE, WHITE
+from utils import (BLACK, CLIP_RANGE, ELECT_THRESHOLD, LR, SIMPLE_ACTIONS,
+                   STATE_SIZE, WHITE)
 from wrapper import GameWrapper
 
 if torch.cuda.is_available():
@@ -115,7 +116,8 @@ class Main:
     def __init__(self):
         self.gamma = 0.99
         self.lamda = 0.95
-        self.updates = 10
+        self.updates = 100
+        self.matches = 100
         self.epochs = 4
         self.n_workers = 8
         self.worker_steps = 10000
@@ -181,35 +183,43 @@ class Main:
 
         episode_infos = []
 
-        for t in range(self.worker_steps):
-            obs[:, t] = self.obs_white
+        with torch.no_grad():
+            for t in range(self.worker_steps):
+                obs[:, t] = self.obs_white
 
-            pi, v = self.curr_best(obs_to_torch(self.obs_white))
-            values[:, t] = v.cpu().data.numpy()
-            a = pi.sample()
-            actions[:, t] = a.cpu().data.numpy()
-            neg_log_pis[:, t] = -pi.log_prob(a).cpu().data.numpy()
+                pi, v = self.curr_best(obs_to_torch(self.obs_white))
+                values[:, t] = v.cpu().data.numpy()
+                a = pi.sample()
+                actions[:, t] = a.cpu().data.numpy()
+                neg_log_pis[:, t] = -pi.log_prob(a).cpu().data.numpy()
 
-            pi_black, v_black = self.curr_best(obs_to_torch(self.obs_black))
-            a_black = pi_black.sample()
+                pi_black, v_black = self.curr_best(
+                    obs_to_torch(self.obs_black)
+                )
+                a_black = pi_black.sample()
 
-            for w, worker in enumerate(self.workers):
-                # auto reset when done
-                worker.child.send(('step', [actions[w, t], a_black[w].item()]))
-                # worker.child.send(
-                #     ('step', [actions[w, t], random.choice(SIMPLE_ACTIONS)])
-                # )
+                for w, worker in enumerate(self.workers):
+                    # auto reset when done
+                    worker.child.send(
+                        ('step', [actions[w, t], a_black[w].item()])
+                    )
+                    # worker.child.send(
+                    #     (
+                    #         'step',
+                    #         [actions[w, t], random.choice(SIMPLE_ACTIONS)],
+                    #     )
+                    # )
 
-            for w, worker in enumerate(self.workers):
-                white_obs, _, reward, done, info = worker.child.recv()
-                self.obs_white[w] = white_obs
-                rewards[w, t] = reward[WHITE]
-                dones[w, t] = done
+                for w, worker in enumerate(self.workers):
+                    white_obs, _, reward, done, info = worker.child.recv()
+                    self.obs_white[w] = white_obs
+                    rewards[w, t] = reward[WHITE]
+                    dones[w, t] = done
 
-                if info:  # when episode done
-                    # might have
-                    info['obs_white'] = obs[w, t]
-                    episode_infos.append(info)
+                    if info:  # when episode done
+                        # might have
+                        info['obs_white'] = obs[w, t]
+                        episode_infos.append(info)
 
         advantages = self._calc_advantages(dones, rewards, values)
         samples = {
@@ -279,14 +289,62 @@ class Main:
 
         return np.mean(train_info, axis=0)
 
+    def run_matching_loop(self):
+        # TODO multiproccess matching
+        self.curr_best.eval()
+        self.model.eval()
+
+        episode_info = deque()  # unbounded
+        white_wins, black_wins = 0, 0
+
+        with torch.no_grad():
+            env = GameWrapper()
+            white_obs, black_obs = env.reset()
+
+            for i_match in range(self.matches):
+                while True:
+                    pi_white, v_white = self.model(obs_to_torch(white_obs))
+                    a_white = pi_white.sample()
+                    pi_black, v_black = self.curr_best(obs_to_torch(black_obs))
+                    a_black = pi_black.sample()
+
+                    white_obs, black_obs, reward, done, info = env.step(
+                        white_action=a_white[0].item(),
+                        black_action=a_black[0].item(),
+                    )
+
+                    if info:
+                        assert any(reward)
+                        if reward[WHITE] == 1:
+                            white_wins += 1
+                        if reward[BLACK] == 1:
+                            black_wins += 1
+                        break
+
+                episode_info.append(info)
+                _, _, length_mean = Main._get_mean_episode_info(episode_info)
+                print(
+                    f'{i_match:4}: white_wins:{white_wins:4} black_wins:{black_wins:4} length={length_mean:.3f}'
+                )
+
+        # save better model
+        white_win_rate = white_wins / (white_wins + black_wins)
+        if white_win_rate >= ELECT_THRESHOLD:
+            torch.save(self.model.state_dict(), 'best.pth')
+            print(f'new win rate: {white_win_rate:.2f} saved best.pth')
+
     def run_training_loop(self):
+        # calibrate model status
+        self.curr_best.eval()
+        self.model.train()
+
         episode_info = deque(maxlen=100)
 
-        for update in range(self.updates):
+        for i_update in range(self.updates):
             time_start = time.time()
 
             # lr schedule
-            progress = update / self.updates
+            progress = i_update / self.updates
             learning_rate = LR * (1 - progress)
             clip_range = CLIP_RANGE * (1 - progress)
 
@@ -302,13 +360,8 @@ class Main:
                 episode_info
             )
             print(
-                f'{update:4}: fps={fps:3} reward={reward_mean:.2f} length={length_mean:.3f}'
+                f'{i_update:4}: fps={fps:3} reward={reward_mean:.2f} length={length_mean:.3f}'
             )
-
-            # save latest model
-            if update % 100 == 0:
-                torch.save(self.model.state_dict(), 'best.pth')
-                print('saved best.pth')
 
     @staticmethod
     def _get_mean_episode_info(episode_info):
@@ -346,4 +399,5 @@ class Main:
 if __name__ == "__main__":
     m = Main()
     m.run_training_loop()
+    m.run_matching_loop()
     m.destroy()
