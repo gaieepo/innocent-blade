@@ -256,6 +256,7 @@ class Game:
         # 1. faction-wise misc
         state['white'].extend(
             [
+                self.timer,
                 LANE_LENGTH,
                 self.white.gold,
                 self.white.gold_speed,
@@ -284,6 +285,7 @@ class Game:
         )
         state['black'].extend(
             [
+                self.timer,
                 LANE_LENGTH,
                 self.black.gold,
                 self.black.gold_speed,

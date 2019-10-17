@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
 
+from utils import STATE_SIZE
+
 if torch.cuda.is_available():
     device = torch.device('cuda:3')
 else:
@@ -12,7 +14,7 @@ else:
 class Model(nn.Module):
     def __init__(self):
         super().__init__()
-        self.fc1 = nn.Linear(208 * 8, 1024)
+        self.fc1 = nn.Linear(STATE_SIZE * 8, 1024)
         self.fc2 = nn.Linear(1024, 512)
         self.fc3 = nn.Linear(512, 256)
         self.pi_logits = nn.Linear(256, 17)
@@ -45,5 +47,5 @@ if __name__ == "__main__":
     print(model.state_dict())
     model.apply(weights_init)
     print(model.state_dict())
-    outs = model(torch.rand(208 * 8))
+    outs = model(torch.rand(STATE_SIZE * 8))
     print(outs)

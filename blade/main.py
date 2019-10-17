@@ -10,7 +10,7 @@ import torch
 import torch.optim as optim
 
 from models import Model, obs_to_torch, weights_init
-from utils import CLIP_RANGE, LR, SIMPLE_ACTIONS, WHITE
+from utils import CLIP_RANGE, LR, SIMPLE_ACTIONS, STATE_SIZE, WHITE
 from wrapper import GameWrapper
 
 if torch.cuda.is_available():
@@ -115,7 +115,7 @@ class Main:
     def __init__(self):
         self.gamma = 0.99
         self.lamda = 0.95
-        self.updates = 10000
+        self.updates = 10
         self.epochs = 4
         self.n_workers = 8
         self.worker_steps = 10000
@@ -126,8 +126,12 @@ class Main:
 
         self.workers = [Worker(42 + i) for i in range(self.n_workers)]
 
-        self.obs_white = np.zeros((self.n_workers, 8 * 208), dtype=np.float32)
-        self.obs_black = np.zeros((self.n_workers, 8 * 208), dtype=np.float32)
+        self.obs_white = np.zeros(
+            (self.n_workers, 8 * STATE_SIZE), dtype=np.float32
+        )
+        self.obs_black = np.zeros(
+            (self.n_workers, 8 * STATE_SIZE), dtype=np.float32
+        )
 
         for worker in self.workers:
             worker.child.send(('reset', None))
@@ -159,7 +163,8 @@ class Main:
     def sample(self):
         # TODO white and black both can be learnt from
         obs = np.zeros(
-            (self.n_workers, self.worker_steps, 8 * 208), dtype=np.float32
+            (self.n_workers, self.worker_steps, 8 * STATE_SIZE),
+            dtype=np.float32,
         )
         actions = np.zeros((self.n_workers, self.worker_steps), dtype=np.int32)
         values = np.zeros(
@@ -190,10 +195,10 @@ class Main:
 
             for w, worker in enumerate(self.workers):
                 # auto reset when done
-                # worker.child.send(('step', [actions[w, t], a_black[w].item()]))
-                worker.child.send(
-                    ('step', [actions[w, t], random.choice(SIMPLE_ACTIONS)])
-                )
+                worker.child.send(('step', [actions[w, t], a_black[w].item()]))
+                # worker.child.send(
+                #     ('step', [actions[w, t], random.choice(SIMPLE_ACTIONS)])
+                # )
 
             for w, worker in enumerate(self.workers):
                 white_obs, _, reward, done, info = worker.child.recv()
@@ -232,13 +237,14 @@ class Main:
         )
         last_advantage = 0
 
-        masks = Main._generate_mask(dones)
+        # masks = Main._generate_mask(dones)
 
         _, last_value = self.model(obs_to_torch(self.obs_white))
         last_value = last_value.cpu().data.numpy()
 
         for t in reversed(range(self.worker_steps)):
-            mask = masks[:, t]
+            # mask = masks[:, t]
+            mask = 1.0 - dones[:, t]
             last_value = last_value * mask
             last_advantage = last_advantage * mask
 

@@ -7,6 +7,7 @@ import numpy as np
 SEED = 42
 MAX_GLOBAL_TIME = 5e4
 MIN_MATCHES = 10
+STATE_SIZE = 209
 
 GAMMA = 0.99
 LR = 2.5e-4
@@ -45,7 +46,7 @@ BLACKSMITH_POPULATION_INCREMENT = 1
 KEEP_POPULATION_INCREMENT = 2
 
 FULL_ACTIONS = [
-    'null',
+    'noop',
     'barrack',
     'blacksmith',
     'windmill',

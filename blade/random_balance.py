@@ -53,7 +53,7 @@ if __name__ == "__main__":
     while True:  # episode loop
         state = game.reset()
 
-        white_action, black_action = 'null', 'null'
+        white_action, black_action = 'noop', 'noop'
 
         for i_step in count():  # infinite game time when plays against human
             # game.render(white_action=white_action, black_action=black_action)

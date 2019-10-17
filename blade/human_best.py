@@ -24,7 +24,7 @@ else:
 # general agents
 ###################################################
 def human_agent():
-    action = 'null'
+    action = 'noop'
 
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
@@ -113,7 +113,7 @@ if __name__ == "__main__":
 
     while True:  # episode loop
         white_state, black_state = gw.reset()
-        white_action, black_action = 'null', 'null'
+        white_action, black_action = 'noop', 'noop'
 
         while True:  # infinite game time when plays against human
             gw.render(white_action=white_action, black_action=black_action)
@@ -126,16 +126,16 @@ if __name__ == "__main__":
                 gw.close()
             elif white_action == 'min_fps':
                 gw.set_fps(step=-1)
-                white_action = 'null'
+                white_action = 'noop'
             elif white_action == 'up_fps':
                 gw.set_fps(step=5)
-                white_action = 'null'
+                white_action = 'noop'
             elif white_action == 'down_fps':
                 gw.set_fps(step=-5)
-                white_action = 'null'
+                white_action = 'noop'
             elif white_action == 'reset_fps':
                 gw.set_fps()
-                white_action = 'null'
+                white_action = 'noop'
 
             # model actions
             with torch.no_grad():

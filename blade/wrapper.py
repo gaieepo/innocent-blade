@@ -1,7 +1,7 @@
 import numpy as np
 
 from game import Game
-from utils import BLACK, WHITE
+from utils import BLACK, WHITE, STATE_SIZE
 
 
 class GameWrapper:
@@ -9,8 +9,8 @@ class GameWrapper:
         self.env = Game(debug=debug)
         self.env.seed(seed)
         self.max_limit = max_limit
-        self.obs_white_8 = np.zeros((8, 208))
-        self.obs_black_8 = np.zeros((8, 208))
+        self.obs_white_8 = np.zeros((8, STATE_SIZE))
+        self.obs_black_8 = np.zeros((8, STATE_SIZE))
         self.rewards_white = []
         self.rewards_black = []
 
@@ -89,4 +89,4 @@ class GameWrapper:
 if __name__ == "__main__":
     gw = GameWrapper(42)
     print(gw.reset())
-    print(gw.step('null', 'null'))
+    print(gw.step('noop', 'noop'))
