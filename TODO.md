@@ -10,3 +10,4 @@
 10. monk should do round robin heal (done but different from flash version)
 11. timer is needed in observable state (done)
 12. game wise random state
+13. make monk attack and heal extreme (tentative change)
