@@ -11,13 +11,8 @@ from torch.distributions import Categorical
 
 from game import Game
 from models import Model, obs_to_torch
-from utils import FULL_ACTIONS, WHITE, BLACK
+from utils import BLACK, FULL_ACTIONS, WHITE
 from wrapper import GameWrapper
-
-if torch.cuda.is_available():
-    device = torch.device('cuda:3')
-else:
-    device = torch.device('cpu')
 
 
 ###################################################
@@ -93,6 +88,11 @@ if __name__ == "__main__":
     # env setup
     gw = GameWrapper(debug=args.debug)
 
+    device = (
+        torch.device('cuda:2')
+        if torch.cuda.is_available()
+        else torch.device('cpu')
+    )
     model = Model()
     model.to(device)
 

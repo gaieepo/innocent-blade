@@ -14,11 +14,6 @@ from utils import (BLACK, CLIP_RANGE, ELECT_THRESHOLD, LR, SIMPLE_ACTIONS,
                    STATE_SIZE, WHITE)
 from wrapper import GameWrapper
 
-if torch.cuda.is_available():
-    device = torch.device('cuda:3')
-else:
-    device = torch.device('cpu')
-
 
 def worker_process(remote, seed):
     env = GameWrapper(seed)
@@ -114,6 +109,12 @@ class Trainer:
 
 class Main:
     def __init__(self):
+        self.device = (
+            torch.device('cuda:2')
+            if torch.cuda.is_available()
+            else torch.device('cpu')
+        )
+
         self.gamma = 0.99
         self.lamda = 0.95
         self.cycles = 100
@@ -144,8 +145,8 @@ class Main:
         self.model = Model()
         self.curr_best = Model()
 
-        self.model.to(device)
-        self.curr_best.to(device)
+        self.model.to(self.device)
+        self.curr_best.to(self.device)
 
         if os.path.exists('best.pth'):
             self.model.load_state_dict(torch.load('best.pth'))
@@ -238,7 +239,7 @@ class Main:
             if k == 'obs':
                 samples_flat[k] = obs_to_torch(v)
             else:
-                samples_flat[k] = torch.tensor(v, device=device)
+                samples_flat[k] = torch.tensor(v, device=self.device)
 
         return samples_flat, episode_infos
 
@@ -334,7 +335,7 @@ class Main:
             torch.save(self.model.state_dict(), 'best.pth')
             print(f'new win rate: {white_win_rate:.2f} saved best.pth')
         else:
-            print('new model not good enough, keep training')
+            print(f'new win rate: {white_win_rate:.2f} no good, keep training')
 
     def run_training_loop(self):
         # calibrate model status
