@@ -38,11 +38,24 @@ def obs_to_torch(obs):
     return res
 
 
-def weights_init(m):
+def weights_init_zero(m):
     """ zero everything, looks neat """
     if isinstance(m, nn.Linear):
         m.weight.data.zero_()
         m.bias.data.zero_()
+
+
+def weights_init_xavier(m):
+    classname = m.__class__.__name__
+    print(classname)
+
+    if classname.find('Conv') != -1:
+        nn.init.xavier_normal(m.weight.data, gain=1)
+    elif classname.find('Linear') != -1:
+        nn.init.xavier_normal(m.weight.data, gain=1)
+    elif classname.find('BatchNorm2d') != -1:
+        nn.init.normal(m.weight.data, 1.0, 0.02)
+        nn.init.constant(m.bias.data, 0.0)
 
 
 if __name__ == "__main__":
