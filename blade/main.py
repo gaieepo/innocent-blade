@@ -9,7 +9,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 
-from models import Model, obs_to_torch, weights_init
+from models import Model, obs_to_torch, weights_init_xavier
 from utils import (BLACK, CLIP_RANGE, ELECT_THRESHOLD, LR, SIMPLE_ACTIONS,
                    STATE_SIZE, WHITE)
 from wrapper import GameWrapper
@@ -153,8 +153,8 @@ class Main:
             self.curr_best.load_state_dict(torch.load('best.pth'))
             print('loaded best.pth')
         else:
-            self.model.apply(weights_init)
-            self.curr_best.apply(weights_init)
+            self.model.apply(weights_init_xavier)
+            self.curr_best.apply(weights_init_xavier)
             print('zero-ed out')
             torch.save(self.curr_best.state_dict(), 'best.pth')
             print('saved best.pth')

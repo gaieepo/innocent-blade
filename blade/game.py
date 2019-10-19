@@ -8,7 +8,7 @@ import rendering
 from utils import (BLACKSMITH_POPULATION_INCREMENT, DEFAULT_MAX_POPULATION,
                    FPS, FULL_ACTIONS, FULL_MAX_POPULATION, GOLD_SPEED,
                    INITIAL_GOLD, KEEP_POPULATION_INCREMENT, LANE_LENGTH,
-                   PREPRO_DAMAGE, PREPRO_GOLD, PREPRO_TIME, SEED,
+                   PREPRO_HEALTH, PREPRO_GOLD, PREPRO_TIME, SEED,
                    SIMPLE_ACTIONS, SIMPLE_TECHS, TRANSPORT_GOLD_SPEED,
                    UNIT_INDEX, UNIT_TEMPLATE, UNITS, WINDMILL_GOLD_SPEED, Base,
                    Watchtower)
@@ -256,59 +256,59 @@ class Game:
         # 1. faction-wise misc
         state['white'].extend(
             [
-                self.timer,
-                LANE_LENGTH,
-                self.white.gold,
-                self.white.gold_speed,
+                self.timer / PREPRO_TIME,
+                # LANE_LENGTH,
+                self.white.gold / PREPRO_GOLD,
+                # self.white.gold_speed,
                 self.white.watchtower is not None,
                 (
                     0
                     if self.white.watchtower is None
-                    else self.white.watchtower.damage
+                    else self.white.watchtower.damage / PREPRO_HEALTH
                 ),
                 (
                     0
                     if self.white.watchtower is None
-                    else self.white.watchtower.attack_range
+                    else self.white.watchtower.attack_range / LANE_LENGTH
                 ),
                 (
                     0
                     if self.white.watchtower is None
-                    else self.white.watchtower.interval
+                    else self.white.watchtower.interval / PREPRO_TIME
                 ),
                 (
                     0
                     if self.white.watchtower is None
-                    else self.white.watchtower.cool_down
+                    else self.white.watchtower.cool_down / PREPRO_TIME
                 ),
             ]
         )
         state['black'].extend(
             [
-                self.timer,
-                LANE_LENGTH,
-                self.black.gold,
-                self.black.gold_speed,
+                self.timer / PREPRO_TIME,
+                # LANE_LENGTH,
+                self.black.gold / PREPRO_GOLD,
+                # self.black.gold_speed,
                 self.black.watchtower is not None,
                 (
                     0
                     if self.black.watchtower is None
-                    else self.black.watchtower.damage
+                    else self.black.watchtower.damage / PREPRO_HEALTH
                 ),
                 (
                     0
                     if self.black.watchtower is None
-                    else self.black.watchtower.attack_range
+                    else self.black.watchtower.attack_range / LANE_LENGTH
                 ),
                 (
                     0
                     if self.black.watchtower is None
-                    else self.black.watchtower.interval
+                    else self.black.watchtower.interval / PREPRO_TIME
                 ),
                 (
                     0
                     if self.black.watchtower is None
-                    else self.black.watchtower.cool_down
+                    else self.black.watchtower.cool_down / PREPRO_TIME
                 ),
             ]
         )
@@ -317,9 +317,9 @@ class Game:
         for k, v in self.white.techs.items():
             state['white'].extend(
                 [
-                    v['time_cost'],
-                    v['count_down'],
-                    v['gold_cost'],
+                    v['time_cost'] / PREPRO_TIME,
+                    v['count_down'] / PREPRO_TIME,
+                    v['gold_cost'] / PREPRO_GOLD,
                     v['built'],
                     v['building'],
                 ]
@@ -328,9 +328,9 @@ class Game:
         for k, v in self.black.techs.items():
             state['black'].extend(
                 [
-                    v['time_cost'],
-                    v['count_down'],
-                    v['gold_cost'],
+                    v['time_cost'] / PREPRO_TIME,
+                    v['count_down'] / PREPRO_TIME,
+                    v['gold_cost'] / PREPRO_GOLD,
                     v['built'],
                     v['building'],
                 ]
@@ -341,9 +341,9 @@ class Game:
             state['white'].extend(
                 [
                     UNIT_INDEX[v['name']],
-                    v['gold_cost'],
-                    v['time_cost'],
-                    v['count_down'],
+                    v['gold_cost'] / PREPRO_GOLD,
+                    v['time_cost'] / PREPRO_TIME,
+                    v['count_down'] / PREPRO_TIME,
                     v['building'],
                 ]
             )
@@ -352,9 +352,9 @@ class Game:
             state['black'].extend(
                 [
                     UNIT_INDEX[v['name']],
-                    v['gold_cost'],
-                    v['time_cost'],
-                    v['count_down'],
+                    v['gold_cost'] / PREPRO_GOLD,
+                    v['time_cost'] / PREPRO_TIME,
+                    v['count_down'] / PREPRO_TIME,
                     v['building'],
                 ]
             )
@@ -369,14 +369,14 @@ class Game:
                 state_white_army.extend(
                     [
                         UNIT_INDEX[un.name],
-                        un.distance,
+                        un.distance / LANE_LENGTH,
                         un.direction,
-                        un.cool_down,
-                        un.interval,
-                        un.health,
-                        un.max_health,
-                        un.damage,
-                        un.heal,
+                        un.cool_down / PREPRO_TIME,
+                        un.interval / PREPRO_TIME,
+                        un.health / PREPRO_HEALTH,
+                        un.max_health / PREPRO_HEALTH,
+                        un.damage / PREPRO_HEALTH,
+                        un.heal / PREPRO_HEALTH,
                     ]
                 )
             else:
@@ -387,14 +387,14 @@ class Game:
                 state_black_army.extend(
                     [
                         UNIT_INDEX[un.name],
-                        un.distance,
+                        un.distance / LANE_LENGTH,
                         un.direction,
-                        un.cool_down,
-                        un.interval,
-                        un.health,
-                        un.max_health,
-                        un.damage,
-                        un.heal,
+                        un.cool_down / PREPRO_TIME,
+                        un.interval / PREPRO_TIME,
+                        un.health / PREPRO_HEALTH,
+                        un.max_health / PREPRO_HEALTH,
+                        un.damage / PREPRO_HEALTH,
+                        un.heal / PREPRO_HEALTH,
                     ]
                 )
             else:
@@ -409,26 +409,26 @@ class Game:
         # 4. base (health determined by tech)
         state['white'].extend(
             [
-                self.white.base.REPAIR_COST,
-                self.white.base.REPAIR_SPEED,
+                self.white.base.REPAIR_COST / PREPRO_GOLD,
+                self.white.base.REPAIR_SPEED / self.white.base.max_health,
                 self.white.base.repairing,
-                self.white.base.health,
-                self.white.base.max_health,
+                self.white.base.health / self.white.base.max_health,
+                # self.white.base.max_health,
                 self.black.base.repairing,
-                self.black.base.health,
-                self.black.base.max_health,
+                self.black.base.health / self.black.base.max_health,
+                # self.black.base.max_health,
             ]
         )
         state['black'].extend(
             [
-                self.black.base.REPAIR_COST,
-                self.black.base.REPAIR_SPEED,
+                self.black.base.REPAIR_COST / PREPRO_GOLD,
+                self.black.base.REPAIR_SPEED / self.black.base.max_health,
                 self.black.base.repairing,
-                self.black.base.health,
-                self.black.base.max_health,
+                self.black.base.health / self.black.base.max_health,
+                # self.black.base.max_health,
                 self.white.base.repairing,
-                self.white.base.health,
-                self.white.base.max_health,
+                self.white.base.health / self.white.base.max_health,
+                # self.white.base.max_health,
             ]
         )
         for k, v in self.black.techs.items():

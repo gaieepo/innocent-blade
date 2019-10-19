@@ -7,7 +7,7 @@ import numpy as np
 SEED = 42
 MAX_GLOBAL_TIME = 5e4
 MIN_MATCHES = 10
-STATE_SIZE = 209
+STATE_SIZE = 205
 
 GAMMA = 0.99
 LR = 2.5e-4
@@ -21,9 +21,9 @@ def generate_id():
 
 
 # prepro
-PREPRO_GOLD = 2000.0
-PREPRO_TIME = 1000.0
-PREPRO_DAMAGE = 500.0
+PREPRO_GOLD = 10000.0
+PREPRO_TIME = 10000.0
+PREPRO_HEALTH = 500.0
 
 # game related
 WHITE = 0
