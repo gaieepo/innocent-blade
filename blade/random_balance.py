@@ -3,7 +3,6 @@ import random
 from itertools import count
 
 import torch
-
 from game import Game
 from utils import SEED, SIMPLE_ACTIONS, WHITE
 
@@ -17,24 +16,11 @@ def random_agent(actions):
 
 if __name__ == "__main__":
     """ script for quick examination of game balance """
-    parser = argparse.ArgumentParser(
-        description='script for quick examination of game balance'
-    )
-    parser.add_argument(
-        '-v', '--verbose', action='store_true', help='print timer'
-    )
-    parser.add_argument(
-        '-d', '--debug', action='store_true', help='debug or not'
-    )
-    parser.add_argument(
-        '-s', '--simple', action='store_true', help='simple actions'
-    )
-    parser.add_argument(
-        '-i',
-        '--identical',
-        action='store_true',
-        help='identical action for both black and white',
-    )
+    parser = argparse.ArgumentParser(description='script for quick examination of game balance')
+    parser.add_argument('-v', '--verbose', action='store_true', help='print timer')
+    parser.add_argument('-d', '--debug', action='store_true', help='debug or not')
+    parser.add_argument('-s', '--simple', action='store_true', help='simple actions')
+    parser.add_argument('-i', '--identical', action='store_true', help='identical action for both black and white')
     args = parser.parse_args()
 
     # env settings

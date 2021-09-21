@@ -6,9 +6,9 @@ import time
 from collections import deque
 
 import numpy as np
+
 import torch
 import torch.optim as optim
-
 from models import Model, obs_to_torch, weights_init_xavier
 from utils import (BLACK, CLIP_RANGE, ELECT_THRESHOLD, LR, SIMPLE_ACTIONS,
                    STATE_SIZE, WHITE)
@@ -33,9 +33,7 @@ def worker_process(remote, seed):
 class Worker:
     def __init__(self, seed):
         self.child, parent = multiprocessing.Pipe()
-        self.process = multiprocessing.Process(
-            target=worker_process, args=(parent, seed)
-        )
+        self.process = multiprocessing.Process(target=worker_process, args=(parent, seed))
         self.process.start()
 
 
@@ -48,9 +46,7 @@ class Trainer:
         sampled_obs = samples['obs']
         sampled_action = samples['actions']
         sampled_return = samples['values'] + samples['advantages']
-        sampled_normalized_advantage = Trainer._normalize(
-            samples['advantages']
-        )
+        sampled_normalized_advantage = Trainer._normalize(samples['advantages'])
         sampled_neg_log_pi = samples['neg_log_pis']
         sampled_value = samples['values']
 
@@ -60,22 +56,14 @@ class Trainer:
         ratio = torch.exp(sampled_neg_log_pi - neg_log_pi)
 
         clipped_ratio = ratio.clamp(min=1.0 - clip_range, max=1.0 + clip_range)
-        policy_reward = torch.min(
-            ratio * sampled_normalized_advantage,
-            clipped_ratio * sampled_normalized_advantage,
-        )
+        policy_reward = torch.min(ratio * sampled_normalized_advantage, clipped_ratio * sampled_normalized_advantage)
         policy_reward = policy_reward.mean()
 
         entropy_bonus = pi.entropy()
         entropy_bonus = entropy_bonus.mean()
 
-        clipped_value = sampled_value + (value - sampled_value).clamp(
-            min=-clip_range, max=-clip_range
-        )
-        vf_loss = torch.max(
-            (value - sampled_return) ** 2,
-            (clipped_value - sampled_return) ** 2,
-        )
+        clipped_value = sampled_value + (value - sampled_value).clamp(min=-clip_range, max=-clip_range)
+        vf_loss = torch.max((value - sampled_return) ** 2, (clipped_value - sampled_return) ** 2)
         vf_loss = 0.5 * vf_loss.mean()
 
         loss = -(policy_reward - 0.5 * vf_loss + 0.01 * entropy_bonus)
@@ -87,20 +75,10 @@ class Trainer:
         torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=0.5)
         self.optimizer.step()
 
-        approx_kl_divergence = (
-            0.5 * ((neg_log_pi - sampled_neg_log_pi) ** 2).mean()
-        )
-        clip_fraction = (
-            (abs((ratio - 1.0)) > clip_range).type(torch.FloatTensor).mean()
-        )
+        approx_kl_divergence = 0.5 * ((neg_log_pi - sampled_neg_log_pi) ** 2).mean()
+        clip_fraction = (abs((ratio - 1.0)) > clip_range).type(torch.FloatTensor).mean()
 
-        return [
-            policy_reward,
-            vf_loss,
-            entropy_bonus,
-            approx_kl_divergence,
-            clip_fraction,
-        ]
+        return [policy_reward, vf_loss, entropy_bonus, approx_kl_divergence, clip_fraction]
 
     @staticmethod
     def _normalize(adv):
@@ -109,11 +87,7 @@ class Trainer:
 
 class Main:
     def __init__(self):
-        self.device = (
-            torch.device('cuda:2')
-            if torch.cuda.is_available()
-            else torch.device('cpu')
-        )
+        self.device = torch.device('cuda:2') if torch.cuda.is_available() else torch.device('cpu')
 
         self.gamma = 0.99
         self.lamda = 0.95
@@ -130,12 +104,8 @@ class Main:
 
         self.workers = [Worker(42 + i) for i in range(self.n_workers)]
 
-        self.obs_white = np.zeros(
-            (self.n_workers, 8 * STATE_SIZE), dtype=np.float32
-        )
-        self.obs_black = np.zeros(
-            (self.n_workers, 8 * STATE_SIZE), dtype=np.float32
-        )
+        self.obs_white = np.zeros((self.n_workers, 8 * STATE_SIZE), dtype=np.float32)
+        self.obs_black = np.zeros((self.n_workers, 8 * STATE_SIZE), dtype=np.float32)
 
         for worker in self.workers:
             worker.child.send(('reset', None))
@@ -166,21 +136,12 @@ class Main:
 
     def sample(self):
         # TODO white and black both can be learnt from
-        obs = np.zeros(
-            (self.n_workers, self.worker_steps, 8 * STATE_SIZE),
-            dtype=np.float32,
-        )
+        obs = np.zeros((self.n_workers, self.worker_steps, 8 * STATE_SIZE), dtype=np.float32)
         actions = np.zeros((self.n_workers, self.worker_steps), dtype=np.int32)
-        values = np.zeros(
-            (self.n_workers, self.worker_steps), dtype=np.float32
-        )
-        neg_log_pis = np.zeros(
-            (self.n_workers, self.worker_steps), dtype=np.float32
-        )
+        values = np.zeros((self.n_workers, self.worker_steps), dtype=np.float32)
+        neg_log_pis = np.zeros((self.n_workers, self.worker_steps), dtype=np.float32)
 
-        rewards = np.zeros(
-            (self.n_workers, self.worker_steps), dtype=np.float32
-        )
+        rewards = np.zeros((self.n_workers, self.worker_steps), dtype=np.float32)
         dones = np.zeros((self.n_workers, self.worker_steps), dtype=np.bool)
 
         episode_infos = []
@@ -195,16 +156,12 @@ class Main:
                 actions[:, t] = a.cpu().data.numpy()
                 neg_log_pis[:, t] = -pi.log_prob(a).cpu().data.numpy()
 
-                pi_black, v_black = self.curr_best(
-                    obs_to_torch(self.obs_black)
-                )
+                pi_black, v_black = self.curr_best(obs_to_torch(self.obs_black))
                 a_black = pi_black.sample()
 
                 for w, worker in enumerate(self.workers):
                     # auto reset when done
-                    worker.child.send(
-                        ('step', [actions[w, t], a_black[w].item()])
-                    )
+                    worker.child.send(('step', [actions[w, t], a_black[w].item()]))
                     # worker.child.send(
                     #     (
                     #         'step',
@@ -244,9 +201,7 @@ class Main:
         return samples_flat, episode_infos
 
     def _calc_advantages(self, dones, rewards, values):
-        advantages = np.zeros(
-            (self.n_workers, self.worker_steps), dtype=np.float32
-        )
+        advantages = np.zeros((self.n_workers, self.worker_steps), dtype=np.float32)
         last_advantage = 0
 
         # masks = Main._generate_mask(dones)
@@ -281,11 +236,7 @@ class Main:
                 for k, v in samples.items():
                     mini_batch[k] = v[mini_batch_indexes]
 
-                res = self.trainer.train(
-                    learning_rate=learning_rate,
-                    clip_range=clip_range,
-                    samples=mini_batch,
-                )
+                res = self.trainer.train(learning_rate=learning_rate, clip_range=clip_range, samples=mini_batch)
 
                 train_info.append(res)
 
@@ -311,8 +262,7 @@ class Main:
                     a_black = pi_black.sample()
 
                     white_obs, black_obs, reward, done, info = env.step(
-                        white_action=a_white[0].item(),
-                        black_action=a_black[0].item(),
+                        white_action=a_white[0].item(), black_action=a_black[0].item()
                     )
 
                     if info:
@@ -325,9 +275,7 @@ class Main:
 
                 episode_info.append(info)
                 _, _, length_mean = Main._get_mean_episode_info(episode_info)
-                print(
-                    f'{i_match:4}: white_wins:{white_wins:4} black_wins:{black_wins:4} length={length_mean:.3f}'
-                )
+                print(f'{i_match:4}: white_wins:{white_wins:4} black_wins:{black_wins:4} length={length_mean:.3f}')
 
         # save better model
         white_win_rate = white_wins / (white_wins + black_wins)
@@ -360,12 +308,8 @@ class Main:
 
             fps = int(self.batch_size / (time_end - time_start))
             episode_info.extend(sample_episode_info)
-            reward_mean, _, length_mean = Main._get_mean_episode_info(
-                episode_info
-            )
-            print(
-                f'{i_update:4}: fps={fps:3} reward={reward_mean:.2f} length={length_mean:.3f}'
-            )
+            reward_mean, _, length_mean = Main._get_mean_episode_info(episode_info)
+            print(f'{i_update:4}: fps={fps:3} reward={reward_mean:.2f} length={length_mean:.3f}')
 
     def run(self):
         for c in range(self.cycles):
@@ -401,11 +345,7 @@ class Main:
             last = dones.shape[1]
             for col in row[::-1]:
                 if col:  # True
-                    rv.append(
-                        np.concatenate(
-                            [1.0 - row[0:last], np.zeros(len(row) - last)]
-                        )
-                    )
+                    rv.append(np.concatenate([1.0 - row[0:last], np.zeros(len(row) - last)]))
                     break
                 else:
                     last -= 1

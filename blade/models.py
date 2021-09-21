@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
-
 from utils import STATE_SIZE
 
 
@@ -27,11 +26,7 @@ class Model(nn.Module):
 
 
 def obs_to_torch(obs):
-    device = (
-        torch.device('cuda:2')
-        if torch.cuda.is_available()
-        else torch.device('cpu')
-    )
+    device = torch.device('cuda:2') if torch.cuda.is_available() else torch.device('cpu')
     res = torch.tensor(obs, dtype=torch.float32, device=device)
     if len(obs.shape) == 1:
         return res.unsqueeze(0)

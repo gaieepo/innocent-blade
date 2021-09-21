@@ -1,7 +1,7 @@
 import numpy as np
 
 from game import Game
-from utils import BLACK, WHITE, STATE_SIZE
+from utils import BLACK, STATE_SIZE, WHITE
 
 
 class GameWrapper:
@@ -42,13 +42,7 @@ class GameWrapper:
             self.obs_white_8[-1, :] = obs['white']
             self.obs_black_8[-1, :] = obs['black']
 
-        return (
-            self.obs_white_8.reshape(-1),
-            self.obs_black_8.reshape(-1),
-            reward,
-            done,
-            episode_info,
-        )
+        return (self.obs_white_8.reshape(-1), self.obs_black_8.reshape(-1), reward, done, episode_info)
 
     def reset(self):
         obs = self.env.reset()

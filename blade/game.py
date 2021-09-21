@@ -8,7 +8,7 @@ import rendering
 from utils import (BLACKSMITH_POPULATION_INCREMENT, DEFAULT_MAX_POPULATION,
                    FPS, FULL_ACTIONS, FULL_MAX_POPULATION, GOLD_SPEED,
                    INITIAL_GOLD, KEEP_POPULATION_INCREMENT, LANE_LENGTH,
-                   PREPRO_HEALTH, PREPRO_GOLD, PREPRO_TIME, SEED,
+                   PREPRO_GOLD, PREPRO_HEALTH, PREPRO_TIME, SEED,
                    SIMPLE_ACTIONS, SIMPLE_TECHS, TRANSPORT_GOLD_SPEED,
                    UNIT_INDEX, UNIT_TEMPLATE, UNITS, WINDMILL_GOLD_SPEED, Base,
                    Watchtower)
@@ -163,9 +163,7 @@ class Faction:
         for k, v in self.techs.items():
             status = 'not'
 
-            if v['gold_cost'] <= self.gold and self._all_require_satisfied(
-                v['require']
-            ):
+            if v['gold_cost'] <= self.gold and self._all_require_satisfied(v['require']):
                 status = 'can'
 
             if v['building']:
@@ -179,9 +177,7 @@ class Faction:
         for k, v in self.units.items():
             status = 'not'
 
-            if v['gold_cost'] <= self.gold and self._all_require_satisfied(
-                v['require']
-            ):
+            if v['gold_cost'] <= self.gold and self._all_require_satisfied(v['require']):
                 status = 'can'
 
             if v['building']:
@@ -193,9 +189,7 @@ class Faction:
         self.render_state['base'] = int(self.base.health)
         self.render_state['repair'] = self.base.repairing
         self.render_state['frontier'] = '{:.1f} {}'.format(*self._frontier())
-        self.render_state['population'] = '{}/{}'.format(
-            self.population, self.max_population
-        )
+        self.render_state['population'] = '{}/{}'.format(self.population, self.max_population)
 
     def faction_step(self, action):
         # - active update
@@ -261,26 +255,10 @@ class Game:
                 self.white.gold / PREPRO_GOLD,
                 # self.white.gold_speed,
                 self.white.watchtower is not None,
-                (
-                    0
-                    if self.white.watchtower is None
-                    else self.white.watchtower.damage / PREPRO_HEALTH
-                ),
-                (
-                    0
-                    if self.white.watchtower is None
-                    else self.white.watchtower.attack_range / LANE_LENGTH
-                ),
-                (
-                    0
-                    if self.white.watchtower is None
-                    else self.white.watchtower.interval / PREPRO_TIME
-                ),
-                (
-                    0
-                    if self.white.watchtower is None
-                    else self.white.watchtower.cool_down / PREPRO_TIME
-                ),
+                (0 if self.white.watchtower is None else self.white.watchtower.damage / PREPRO_HEALTH),
+                (0 if self.white.watchtower is None else self.white.watchtower.attack_range / LANE_LENGTH),
+                (0 if self.white.watchtower is None else self.white.watchtower.interval / PREPRO_TIME),
+                (0 if self.white.watchtower is None else self.white.watchtower.cool_down / PREPRO_TIME),
             ]
         )
         state['black'].extend(
@@ -290,26 +268,10 @@ class Game:
                 self.black.gold / PREPRO_GOLD,
                 # self.black.gold_speed,
                 self.black.watchtower is not None,
-                (
-                    0
-                    if self.black.watchtower is None
-                    else self.black.watchtower.damage / PREPRO_HEALTH
-                ),
-                (
-                    0
-                    if self.black.watchtower is None
-                    else self.black.watchtower.attack_range / LANE_LENGTH
-                ),
-                (
-                    0
-                    if self.black.watchtower is None
-                    else self.black.watchtower.interval / PREPRO_TIME
-                ),
-                (
-                    0
-                    if self.black.watchtower is None
-                    else self.black.watchtower.cool_down / PREPRO_TIME
-                ),
+                (0 if self.black.watchtower is None else self.black.watchtower.damage / PREPRO_HEALTH),
+                (0 if self.black.watchtower is None else self.black.watchtower.attack_range / LANE_LENGTH),
+                (0 if self.black.watchtower is None else self.black.watchtower.interval / PREPRO_TIME),
+                (0 if self.black.watchtower is None else self.black.watchtower.cool_down / PREPRO_TIME),
             ]
         )
 
@@ -457,9 +419,7 @@ class Game:
 
         return state
 
-    def render(
-        self, mode='human', close=False, white_action=None, black_action=None
-    ):
+    def render(self, mode='human', close=False, white_action=None, black_action=None):
         white_action = self._parse_action(white_action)
         black_action = self._parse_action(black_action)
 
@@ -469,9 +429,7 @@ class Game:
             self.white.render = True
             self.black.render = True
 
-        self.viewer.render(
-            self, white_action=white_action, black_action=black_action
-        )
+        self.viewer.render(self, white_action=white_action, black_action=black_action)
 
     def _global_action(self, white_action, black_action):
         for side, action in (('white', white_action), ('black', black_action)):
@@ -497,52 +455,36 @@ class Game:
                 elif side == 'black':
                     self.black.faction_step(action)
             else:
-                raise NotImplementedError(
-                    f'invalid {side} action {action}: unknown action'
-                )
+                raise NotImplementedError(f'invalid {side} action {action}: unknown action')
 
     def _global_movement(self):
         for unit in self.white.army:
-            if unit.direction == 1 and not unit._in_range(
-                self.black._frontier()[0]
-            ):
+            if unit.direction == 1 and not unit._in_range(self.black._frontier()[0]):
                 unit.distance += unit.speed
                 unit.static = False
-            elif (
-                unit.direction == -1
-                and unit.distance - unit.speed >= unit.min_distance
-            ):
+            elif unit.direction == -1 and unit.distance - unit.speed >= unit.min_distance:
                 unit.distance -= unit.speed
                 unit.static = False
 
                 if unit.distance - unit.speed < 0:
                     unit.static = True
                     unit.direction = 0
-            elif unit.direction == 1 and unit._in_range(
-                self.black._frontier()[0]
-            ):
+            elif unit.direction == 1 and unit._in_range(self.black._frontier()[0]):
                 # keep the direction forward but remain static
                 unit.static = True
 
         for unit in self.black.army:
-            if unit.direction == 1 and not unit._in_range(
-                self.white._frontier()[0]
-            ):
+            if unit.direction == 1 and not unit._in_range(self.white._frontier()[0]):
                 unit.distance += unit.speed
                 unit.static = False
-            elif (
-                unit.direction == -1
-                and unit.distance - unit.speed >= unit.min_distance
-            ):
+            elif unit.direction == -1 and unit.distance - unit.speed >= unit.min_distance:
                 unit.distance -= unit.speed
                 unit.static = False
 
                 if unit.distance - unit.speed < 0:
                     unit.static = True
                     unit.direction = 0
-            elif unit.direction == 1 and unit._in_range(
-                self.white._frontier()[0]
-            ):
+            elif unit.direction == 1 and unit._in_range(self.white._frontier()[0]):
                 # keep the direction forward but remain static
                 unit.static = True
 
@@ -555,25 +497,15 @@ class Game:
             if unit.healable:
                 healed = False
                 # iterate all units in own army (still at battle front line)
-                for un in sorted(
-                    self.white.army, key=lambda x: x.distance, reverse=True
-                ):
+                for un in sorted(self.white.army, key=lambda x: x.distance, reverse=True):
                     if un is not unit:  # does not heal self
-                        target_distance = (
-                            un.distance - unit.distance
-                        )  # not base
+                        target_distance = un.distance - unit.distance  # not base
 
-                        if unit.ready(target_distance) and un.health < (
-                            un.max_health - unit.heal
-                        ):
-                            un.health = min(
-                                un.max_health, un.health + unit.heal
-                            )
+                        if unit.ready(target_distance) and un.health < (un.max_health - unit.heal):
+                            un.health = min(un.max_health, un.health + unit.heal)
 
                             # heal also cool down
-                            unit.cool_down = (
-                                unit.cool_down + 1
-                            ) % unit.interval
+                            unit.cool_down = (unit.cool_down + 1) % unit.interval
                             healed = True
                             break
 
@@ -617,34 +549,22 @@ class Game:
                     un.dead = True
                     self.black.population -= 1
 
-                white_watchtower.cool_down = (
-                    white_watchtower.cool_down + 1
-                ) % white_watchtower.interval
+                white_watchtower.cool_down = (white_watchtower.cool_down + 1) % white_watchtower.interval
 
         for unit in self.black.army:
             # heal logic
             if unit.healable:
                 healed = False
                 # iterate all units in own army (still at battle front line)
-                for un in sorted(
-                    self.black.army, key=lambda x: x.distance, reverse=True
-                ):
+                for un in sorted(self.black.army, key=lambda x: x.distance, reverse=True):
                     if un is not unit:  # does not heal self
-                        target_distance = (
-                            un.distance - unit.distance
-                        )  # not base
+                        target_distance = un.distance - unit.distance  # not base
 
-                        if unit.ready(target_distance) and un.health < (
-                            un.max_health - unit.heal
-                        ):
-                            un.health = min(
-                                un.max_health, un.health + unit.heal
-                            )
+                        if unit.ready(target_distance) and un.health < (un.max_health - unit.heal):
+                            un.health = min(un.max_health, un.health + unit.heal)
 
                             # heal also cool down
-                            unit.cool_down = (
-                                unit.cool_down + 1
-                            ) % unit.interval
+                            unit.cool_down = (unit.cool_down + 1) % unit.interval
                             healed = True
                             break
 
@@ -688,9 +608,7 @@ class Game:
                     un.dead = True
                     self.white.population -= 1
 
-                black_watchtower.cool_down = (
-                    black_watchtower.cool_down + 1
-                ) % black_watchtower.interval
+                black_watchtower.cool_down = (black_watchtower.cool_down + 1) % black_watchtower.interval
 
         # remove dead units
         for unit in self.white.army:

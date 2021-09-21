@@ -4,13 +4,13 @@ import random
 
 import numpy as np
 import pygame
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions import Categorical
-
 from game import Game
 from models import Model, obs_to_torch
+from torch.distributions import Categorical
 from utils import BLACK, FULL_ACTIONS, WHITE
 from wrapper import GameWrapper
 
@@ -76,9 +76,7 @@ def random_agent(actions):
 if __name__ == "__main__":
     """ Self-play training procedure """
     parser = argparse.ArgumentParser(description='self play against best')
-    parser.add_argument(
-        '-d', '--debug', action='store_true', help='debug or not'
-    )
+    parser.add_argument('-d', '--debug', action='store_true', help='debug or not')
     args = parser.parse_args()
 
     # env settings (should not use seeded random during training)
@@ -88,11 +86,7 @@ if __name__ == "__main__":
     # env setup
     gw = GameWrapper(debug=args.debug)
 
-    device = (
-        torch.device('cuda:2')
-        if torch.cuda.is_available()
-        else torch.device('cpu')
-    )
+    device = torch.device('cuda:2') if torch.cuda.is_available() else torch.device('cpu')
     model = Model()
     model.to(device)
 
@@ -143,9 +137,7 @@ if __name__ == "__main__":
                 black_action = pi.sample().item()
 
             # update env
-            white_state, black_state, reward, done, info = gw.step(
-                white_action, black_action
-            )
+            white_state, black_state, reward, done, info = gw.step(white_action, black_action)
 
             if done:
                 if reward[WHITE] == 1:

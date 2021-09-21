@@ -13,14 +13,7 @@ class Viewer:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         self.surface = pygame.Surface(self.screen.get_size())
 
-    def render(
-        self,
-        game,
-        mode='human',
-        close=False,
-        white_action=None,
-        black_action=None,
-    ):
+    def render(self, game, mode='human', close=False, white_action=None, black_action=None):
         self.surface.fill((255, 255, 255))
 
         font = pygame.font.Font(None, 24)
@@ -32,11 +25,7 @@ class Viewer:
         black_textpos.right = WIDTH
         self.surface.blit(black_text, black_textpos)
 
-        fps_text = font.render(
-            '%d | %d' % (int(self.clock.get_fps()), game.timer),
-            1,
-            (10, 10, 10),
-        )
+        fps_text = font.render('%d | %d' % (int(self.clock.get_fps()), game.timer), 1, (10, 10, 10))
         fps_textpos = fps_text.get_rect()
         fps_textpos.midtop = (WIDTH / 2, 0)
         self.surface.blit(fps_text, fps_textpos)
@@ -54,19 +43,9 @@ class Viewer:
                 if v in VIZ:
                     k_text = font.render(f'{k}', 1, VIZ[v])
                 elif k == 'base':
-                    white_base_health_ratio = np.clip(
-                        game.white.base.health / game.white.base.max_health,
-                        0,
-                        1,
-                    )
+                    white_base_health_ratio = np.clip(game.white.base.health / game.white.base.max_health, 0, 1)
                     k_text = font.render(
-                        f'{k}: {v}',
-                        1,
-                        (
-                            255 * (1 - white_base_health_ratio),
-                            255 * white_base_health_ratio,
-                            0,
-                        ),
+                        f'{k}: {v}', 1, (255 * (1 - white_base_health_ratio), 255 * white_base_health_ratio, 0)
                     )
                 else:
                     k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
@@ -82,19 +61,9 @@ class Viewer:
                 if v in VIZ:
                     k_text = font.render(f'{k}', 1, VIZ[v])
                 elif k == 'base':
-                    black_base_health_ratio = np.clip(
-                        game.black.base.health / game.black.base.max_health,
-                        0,
-                        1,
-                    )
+                    black_base_health_ratio = np.clip(game.black.base.health / game.black.base.max_health, 0, 1)
                     k_text = font.render(
-                        f'{k}: {v}',
-                        1,
-                        (
-                            255 * (1 - black_base_health_ratio),
-                            255 * black_base_health_ratio,
-                            0,
-                        ),
+                        f'{k}: {v}', 1, (255 * (1 - black_base_health_ratio), 255 * black_base_health_ratio, 0)
                     )
                 else:
                     k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
@@ -112,8 +81,7 @@ class Viewer:
                     (0, 255, 0),
                     pygame.Rect(
                         (
-                            50.0
-                            + (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
+                            50.0 + (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
                             HEIGHT - 30 * (unit.health / unit.max_health),
                         ),
                         (20, 30 * (unit.health / unit.max_health)),
@@ -125,8 +93,7 @@ class Viewer:
                     (0, 255, 255),
                     pygame.Rect(
                         (
-                            50.0
-                            + (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
+                            50.0 + (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
                             HEIGHT - 50 * (unit.health / unit.max_health),
                         ),
                         (25, 50 * (unit.health / unit.max_health)),
@@ -138,8 +105,7 @@ class Viewer:
                     (0, 120, 120),
                     pygame.Rect(
                         (
-                            50.0
-                            + (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
+                            50.0 + (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
                             HEIGHT - 50 * (unit.health / unit.max_health),
                         ),
                         (25, 50 * (unit.health / unit.max_health)),
@@ -153,9 +119,7 @@ class Viewer:
                     (255, 0, 0),
                     pygame.Rect(
                         (
-                            WIDTH
-                            - 50.0
-                            - (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
+                            WIDTH - 50.0 - (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
                             HEIGHT - 30 * (unit.health / unit.max_health),
                         ),
                         (20, 30 * (unit.health / unit.max_health)),
@@ -167,9 +131,7 @@ class Viewer:
                     (255, 255, 0),
                     pygame.Rect(
                         (
-                            WIDTH
-                            - 50.0
-                            - (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
+                            WIDTH - 50.0 - (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
                             HEIGHT - 50 * (unit.health / unit.max_health),
                         ),
                         (25, 50 * (unit.health / unit.max_health)),
@@ -181,9 +143,7 @@ class Viewer:
                     (0, 120, 120),
                     pygame.Rect(
                         (
-                            WIDTH
-                            - 50.0
-                            - (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
+                            WIDTH - 50.0 - (WIDTH - 100.0) * (unit.distance / LANE_LENGTH),
                             HEIGHT - 50 * (unit.health / unit.max_health),
                         ),
                         (25, 50 * (unit.health / unit.max_health)),

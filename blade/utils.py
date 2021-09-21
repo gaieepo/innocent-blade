@@ -66,11 +66,7 @@ FULL_ACTIONS = [
     'stop_repair',
 ]
 
-SIMPLE_ACTIONS = [
-    action
-    for action in FULL_ACTIONS
-    if action not in ['backward', 'stop_repair']
-]
+SIMPLE_ACTIONS = [action for action in FULL_ACTIONS if action not in ['backward', 'stop_repair']]
 
 SIMPLE_TECHS = {
     'barrack': {
@@ -166,109 +162,24 @@ SIMPLE_TECHS = {
 }
 
 TECHS = {
-    'barrack': {
-        'name': 'Barrack',
-        'require': [],
-        'built': False,
-        'building': False,
-    },
+    'barrack': {'name': 'Barrack', 'require': [], 'built': False, 'building': False},
     'keep': {'name': 'Keep', 'require': [], 'built': False, 'building': False},
-    'blacksmith': {
-        'name': 'Blacksmith',
-        'require': [],
-        'built': False,
-        'building': False,
-    },
-    'windmill': {
-        'name': 'Windmill',
-        'require': [],
-        'built': False,
-        'building': False,
-    },
-    'watchtower': {
-        'name': 'Watchtower',
-        'require': ['blacksmith'],
-        'built': False,
-        'building': False,
-    },
-    'steel_blade': {
-        'name': 'Steel Blade',
-        'require': ['blacksmith'],
-        'built': False,
-        'building': False,
-    },
-    'long_barrelled_gun': {
-        'name': 'Long-barrelled Gun',
-        'require': ['blacksmith'],
-        'built': False,
-        'building': False,
-    },
-    'iron_horse': {
-        'name': 'Iron Horse',
-        'require': ['blacksmith', 'castle'],
-        'built': False,
-        'building': False,
-    },
-    'chancel': {
-        'name': 'Chancel',
-        'require': ['keep'],
-        'built': False,
-        'building': False,
-    },
-    'monastery': {
-        'name': 'Monastery',
-        'require': ['keep'],
-        'built': False,
-        'building': False,
-    },
-    'workshop': {
-        'name': 'Workshop',
-        'require': ['keep'],
-        'built': False,
-        'building': False,
-    },
-    'castle': {
-        'name': 'Castle',
-        'require': ['keep'],
-        'built': False,
-        'building': False,
-    },
-    'telescope': {
-        'name': 'Telescope',
-        'require': ['keep', 'watchtower'],
-        'built': False,
-        'building': False,
-    },
-    'transport': {
-        'name': 'Transport',
-        'require': ['keep'],
-        'built': False,
-        'building': False,
-    },
-    'natural_power': {
-        'name': 'Natural Power',
-        'require': ['chancel'],
-        'built': False,
-        'building': False,
-    },
-    'iron_gate': {
-        'name': 'Iron Gate',
-        'require': ['workshop'],
-        'built': False,
-        'building': False,
-    },
-    'alchemy': {
-        'name': 'Alchemy',
-        'require': ['chancel'],
-        'built': False,
-        'building': False,
-    },
-    'noble_metal': {
-        'name': 'Noble Metal',
-        'require': ['monastery', 'castle'],
-        'built': False,
-        'building': False,
-    },
+    'blacksmith': {'name': 'Blacksmith', 'require': [], 'built': False, 'building': False},
+    'windmill': {'name': 'Windmill', 'require': [], 'built': False, 'building': False},
+    'watchtower': {'name': 'Watchtower', 'require': ['blacksmith'], 'built': False, 'building': False},
+    'steel_blade': {'name': 'Steel Blade', 'require': ['blacksmith'], 'built': False, 'building': False},
+    'long_barrelled_gun': {'name': 'Long-barrelled Gun', 'require': ['blacksmith'], 'built': False, 'building': False},
+    'iron_horse': {'name': 'Iron Horse', 'require': ['blacksmith', 'castle'], 'built': False, 'building': False},
+    'chancel': {'name': 'Chancel', 'require': ['keep'], 'built': False, 'building': False},
+    'monastery': {'name': 'Monastery', 'require': ['keep'], 'built': False, 'building': False},
+    'workshop': {'name': 'Workshop', 'require': ['keep'], 'built': False, 'building': False},
+    'castle': {'name': 'Castle', 'require': ['keep'], 'built': False, 'building': False},
+    'telescope': {'name': 'Telescope', 'require': ['keep', 'watchtower'], 'built': False, 'building': False},
+    'transport': {'name': 'Transport', 'require': ['keep'], 'built': False, 'building': False},
+    'natural_power': {'name': 'Natural Power', 'require': ['chancel'], 'built': False, 'building': False},
+    'iron_gate': {'name': 'Iron Gate', 'require': ['workshop'], 'built': False, 'building': False},
+    'alchemy': {'name': 'Alchemy', 'require': ['chancel'], 'built': False, 'building': False},
+    'noble_metal': {'name': 'Noble Metal', 'require': ['monastery', 'castle'], 'built': False, 'building': False},
 }
 
 UNITS = {
@@ -318,9 +229,7 @@ class Base:
         return '+' if self.repairing else '_'
 
     def __repr__(self):
-        return (
-            f'<{self.faction.side} {self.fmt_repairing} H:{self.health:.1f}>'
-        )
+        return f'<{self.faction.side} {self.fmt_repairing} H:{self.health:.1f}>'
 
     def set_repair(self, flag):
         if flag:
@@ -400,18 +309,14 @@ class Unit:
         return LANE_LENGTH - fr - self.distance <= self.attack_range
 
     def ready(self, dist):
-        return (
-            self.static and dist <= self.attack_range and self.cool_down == 0
-        )
+        return self.static and dist <= self.attack_range and self.cool_down == 0
 
 
 class Footman(Unit):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.max_health = 280.0 + (
-            40.0 if self.faction.techs['steel_blade']['built'] else 0.0
-        )
+        self.max_health = 280.0 + (40.0 if self.faction.techs['steel_blade']['built'] else 0.0)
         self.health = self.max_health
 
         self.min_distance = 5.0
@@ -441,9 +346,7 @@ class Rifleman(Unit):
         self.speed = 1.3 + random.random() / 5
 
         self.attack_range = 10.0
-        self.damage = 9 + (
-            3 if self.faction.techs['long_barrelled_gun']['built'] else 0
-        )
+        self.damage = 9 + (3 if self.faction.techs['long_barrelled_gun']['built'] else 0)
         # self.attack_animation = 2
         # self.attack_backswing = 2
         self.interval = 14
@@ -478,9 +381,4 @@ class Monk(Unit):
 
 UNIT_TEMPLATE = {'footman': Footman, 'rifleman': Rifleman, 'monk': Monk}
 
-VIZ = {
-    'not': (255, 0, 1),
-    'can': (0, 0, 255),
-    'building': (255, 255, 0),
-    'built': (0, 255, 0),
-}
+VIZ = {'not': (255, 0, 1), 'can': (0, 0, 255), 'building': (255, 255, 0), 'built': (0, 255, 0)}

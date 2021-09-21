@@ -88,14 +88,8 @@ if __name__ == "__main__":
     state = game.reset()
 
     # policy models
-    best_policy = Policy(
-        input_dim=state['white'].shape[0],
-        output_dim=len(game.available_actions),
-    )
-    latest_policy = Policy(
-        input_dim=state['white'].shape[0],
-        output_dim=len(game.available_actions),
-    )
+    best_policy = Policy(input_dim=state['white'].shape[0], output_dim=len(game.available_actions))
+    latest_policy = Policy(input_dim=state['white'].shape[0], output_dim=len(game.available_actions))
 
     if os.path.exists('best.pth'):  # load best
         latest_policy.load_state_dict(torch.load('best.pth'))
@@ -130,38 +124,21 @@ if __name__ == "__main__":
             for t in count(1):  # TODO unlimited game time ???
                 # preprocess input state
                 input_state = {
-                    'white': np.concatenate(
-                        [state['white'], prev_state['white']]
-                    )
+                    'white': np.concatenate([state['white'], prev_state['white']])
                     if prev_state['white'] is not None
-                    else np.concatenate(
-                        [state['white'], np.zeros_like(state['white'])]
-                    ),
-                    'black': np.concatenate(
-                        [state['black'], prev_state['black']]
-                    )
+                    else np.concatenate([state['white'], np.zeros_like(state['white'])]),
+                    'black': np.concatenate([state['black'], prev_state['black']])
                     if prev_state['black'] is not None
-                    else np.concatenate(
-                        [state['black'], np.zeros_like(state['black'])]
-                    ),
+                    else np.concatenate([state['black'], np.zeros_like(state['black'])]),
                 }
                 prev_state = state
 
                 # generate actions
-                white_action = torch_agent(
-                    best_policy, input_state['white'], game.available_actions
-                )
-                black_action = torch_agent(
-                    best_policy,
-                    input_state['black'],
-                    game.available_actions,
-                    save=False,
-                )
+                white_action = torch_agent(best_policy, input_state['white'], game.available_actions)
+                black_action = torch_agent(best_policy, input_state['black'], game.available_actions, save=False)
 
                 # update env
-                state, reward, done, info = game.step(
-                    white_action, black_action
-                )
+                state, reward, done, info = game.step(white_action, black_action)
 
                 # record reward
                 best_policy.rewards.append(reward[WHITE])
@@ -173,9 +150,7 @@ if __name__ == "__main__":
                         white_wins += 1
                     else:
                         black_wins += 1
-                    selfplay_white_win_rate = white_wins / (
-                        white_wins + black_wins
-                    )
+                    selfplay_white_win_rate = white_wins / (white_wins + black_wins)
 
                     episode_number += 1
 
@@ -205,42 +180,22 @@ if __name__ == "__main__":
             for t in count(1):
                 # preprocess input state
                 input_state = {
-                    'white': np.concatenate(
-                        [state['white'], prev_state['white']]
-                    )
+                    'white': np.concatenate([state['white'], prev_state['white']])
                     if prev_state['white'] is not None
-                    else np.concatenate(
-                        [state['white'], np.zeros_like(state['white'])]
-                    ),
-                    'black': np.concatenate(
-                        [state['black'], prev_state['black']]
-                    )
+                    else np.concatenate([state['white'], np.zeros_like(state['white'])]),
+                    'black': np.concatenate([state['black'], prev_state['black']])
                     if prev_state['black'] is not None
-                    else np.concatenate(
-                        [state['black'], np.zeros_like(state['black'])]
-                    ),
+                    else np.concatenate([state['black'], np.zeros_like(state['black'])]),
                 }
                 prev_state = state
 
                 # generate actions
                 with torch.no_grad():
-                    white_action = torch_agent(
-                        latest_policy,
-                        input_state['white'],
-                        game.available_actions,
-                        save=False,
-                    )
-                    black_action = torch_agent(
-                        best_policy,
-                        input_state['black'],
-                        game.available_actions,
-                        save=False,
-                    )
+                    white_action = torch_agent(latest_policy, input_state['white'], game.available_actions, save=False)
+                    black_action = torch_agent(best_policy, input_state['black'], game.available_actions, save=False)
 
                 # update env
-                state, reward, done, info = game.step(
-                    white_action, black_action
-                )
+                state, reward, done, info = game.step(white_action, black_action)
 
                 # record reward
                 latest_policy.rewards.append(reward[WHITE])
@@ -250,9 +205,7 @@ if __name__ == "__main__":
                         white_wins += 1
                     else:
                         black_wins += 1
-                    match_white_win_rate = white_wins / (
-                        white_wins + black_wins
-                    )
+                    match_white_win_rate = white_wins / (white_wins + black_wins)
 
                     print(
                         f'[{i_match_episode}/400-{t}] white: {white_wins} black: {black_wins} white rate: {100. * match_white_win_rate:.2f}%'
@@ -262,6 +215,4 @@ if __name__ == "__main__":
 
         if match_white_win_rate > 0.55:
             torch.save(latest_policy.state_dict(), 'best.pth')
-            print(
-                f'White win rate is {match_white_win_rate:.2f} above 55%, saved new best'
-            )
+            print(f'White win rate is {match_white_win_rate:.2f} above 55%, saved new best')
