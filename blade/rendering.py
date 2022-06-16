@@ -1,10 +1,14 @@
 import numpy as np
 import pygame
 
-from utils import FPS, HEIGHT, LANE_LENGTH, VIZ, WIDTH, Footman, Monk, Rifleman
+from game import Footman, Monk, Rifleman
+from utils import FPS, HEIGHT, LANE_LENGTH, VIZ, WIDTH
 
 
 class Viewer:
+    WHITE = (255, 255, 255)
+    LIGHT_GRAY = (10, 10, 10)
+
     def __init__(self, caption):
         pygame.init()
         pygame.display.set_caption(caption)
@@ -13,68 +17,68 @@ class Viewer:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         self.surface = pygame.Surface(self.screen.get_size())
 
-    def render(self, game, mode='human', close=False, white_action=None, black_action=None):
-        self.surface.fill((255, 255, 255))
+    def render(self, game, mode='human', close=False, left_action=None, right_action=None):
+        self.surface.fill(self.WHITE)
 
         font = pygame.font.Font(None, 24)
-        white_text = font.render('White', 1, (10, 10, 10))
-        self.surface.blit(white_text, white_text.get_rect())
+        left_text = font.render(game.left.tag, 1, self.LIGHT_GRAY)
+        self.surface.blit(left_text, left_text.get_rect())
 
-        black_text = font.render('Black', 1, (10, 10, 10))
-        black_textpos = black_text.get_rect()
-        black_textpos.right = WIDTH
-        self.surface.blit(black_text, black_textpos)
+        right_text = font.render(game.right.tag, 1, self.LIGHT_GRAY)
+        right_textpos = right_text.get_rect()
+        right_textpos.right = WIDTH
+        self.surface.blit(right_text, right_textpos)
 
-        fps_text = font.render('%d | %d' % (int(self.clock.get_fps()), game.timer), 1, (10, 10, 10))
+        fps_text = font.render('%d | %d' % (int(self.clock.get_fps()), game.timer), 1, self.LIGHT_GRAY)
         fps_textpos = fps_text.get_rect()
         fps_textpos.midtop = (WIDTH / 2, 0)
         self.surface.blit(fps_text, fps_textpos)
 
         # render state text
         # (optional) render action
-        if white_action is not None and black_action is not None:
-            game.white.render_state['action'] = white_action
-            game.black.render_state['action'] = black_action
+        if left_action is not None and right_action is not None:
+            game.left.render_state['action'] = left_action
+            game.right.render_state['action'] = right_action
 
-        white_offset = 50
+        left_offset = 50
 
-        for k, v in game.white.render_state.items():
+        for k, v in game.left.render_state.items():
             if k != 'army':
                 if v in VIZ:
                     k_text = font.render(f'{k}', 1, VIZ[v])
                 elif k == 'base':
-                    white_base_health_ratio = np.clip(game.white.base.health / game.white.base.max_health, 0, 1)
+                    left_base_health_ratio = np.clip(game.left.base.health / game.left.base.max_health, 0, 1)
                     k_text = font.render(
-                        f'{k}: {v}', 1, (255 * (1 - white_base_health_ratio), 255 * white_base_health_ratio, 0)
+                        f'{k}: {v}', 1, (255 * (1 - left_base_health_ratio), 255 * left_base_health_ratio, 0)
                     )
                 else:
-                    k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
+                    k_text = font.render(f'{k}: {v}', 1, self.LIGHT_GRAY)
                 k_textpos = k_text.get_rect()
-                k_textpos.top = white_offset
+                k_textpos.top = left_offset
                 self.surface.blit(k_text, k_textpos)
-                white_offset += 20
+                left_offset += 20
 
-        black_offset = 50
+        right_offset = 50
 
-        for k, v in game.black.render_state.items():
+        for k, v in game.right.render_state.items():
             if k != 'army':
                 if v in VIZ:
                     k_text = font.render(f'{k}', 1, VIZ[v])
                 elif k == 'base':
-                    black_base_health_ratio = np.clip(game.black.base.health / game.black.base.max_health, 0, 1)
+                    right_base_health_ratio = np.clip(game.right.base.health / game.right.base.max_health, 0, 1)
                     k_text = font.render(
-                        f'{k}: {v}', 1, (255 * (1 - black_base_health_ratio), 255 * black_base_health_ratio, 0)
+                        f'{k}: {v}', 1, (255 * (1 - right_base_health_ratio), 255 * right_base_health_ratio, 0)
                     )
                 else:
-                    k_text = font.render(f'{k}: {v}', 1, (10, 10, 10))
+                    k_text = font.render(f'{k}: {v}', 1, self.LIGHT_GRAY)
                 k_textpos = k_text.get_rect()
                 k_textpos.right = WIDTH
-                k_textpos.top = black_offset
+                k_textpos.top = right_offset
                 self.surface.blit(k_text, k_textpos)
-                black_offset += 20
+                right_offset += 20
 
         # render comic army
-        for unit in game.white.army:
+        for unit in game.left.army:
             if isinstance(unit, Footman):
                 pygame.draw.rect(
                     self.surface,
@@ -112,7 +116,7 @@ class Viewer:
                     ),
                 )
 
-        for unit in game.black.army:
+        for unit in game.right.army:
             if isinstance(unit, Footman):
                 pygame.draw.rect(
                     self.surface,
